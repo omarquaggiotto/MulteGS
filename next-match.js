@@ -5,7 +5,7 @@ window.TEAM_FIXTURES = {
   ['GS Montecchio S. Pietro Sq. B',1238518,'stemma-gs-montecchio-san-pietro.png?v=68'],
   ['Atletico Montebello Vicentino',1283491],['Calcio Gazzo',70566],['Junior Monticello Sq. B',1324899],
   ['Lakota',71893],['Lions Alto Chiampo',1087001],['Ospedaletto Vicenza',1199566],['Pedezzi 1950',1323842],
-  ['PGS Concordia',1005793],['Piana 2025',1324896],['Recoaro',1057845],['Rino Toniolo',1098609],
+  ['PGS Concordia',1005793],['Piana 2025',1324896,'https://b2-content.tuttocampo.it/default_team_logo.png'],['Recoaro',1057845],['Rino Toniolo',1098609],
   ['Riviera Berica Sq. B',1199567],['San Bortolo Vicenza',1324897],['San Vitale 1995 Sq. B',1199590],['Valli',65290]
  ].map(([name,id,logo])=>({name,id,logo:logo||`https://b2-content.tuttocampo.it/Teams/Original/${id}.png?v=2`})),
  matches:[
