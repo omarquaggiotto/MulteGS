@@ -63,7 +63,7 @@ window.TEAM_FIXTURES = {
  function team(id){
   const t=data.teams.find(item=>item.id===id), isGs=id===TEAM_ID;
   const name=isGs?'Montecchio S. Pietro':t.name;
-  return `<div class="next-match-team"><img src="${escape(t.logo)}" alt="Stemma ${escape(t.name)}" width="42" height="50"><strong>${escape(name)}${isGs?'<span>Sq. B</span>':''}</strong></div>`;
+  return `<div class="next-match-team ${isGs?'is-gs-team':'is-opponent-team'}"><span class="next-match-crest"><img src="${escape(t.logo)}" alt="Stemma ${escape(t.name)}"></span><strong>${escape(name)}${isGs?'<span>Sq. B</span>':''}</strong></div>`;
  }
  function directions(m){
   if(m.awayId!==TEAM_ID)return '';
