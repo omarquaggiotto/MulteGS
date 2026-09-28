@@ -2,7 +2,7 @@ window.TEAM_FIXTURES = {
  updatedAt:'2026-09-28', season:'2026/27', competition:'Terza Categoria · Vicenza · Girone Unico',
  source:'https://www.tuttocampo.it/Veneto/TerzaCategoria/GironeAVicenza/Squadra/MontecchioSPietroSqB/1238518/Calendario',
  teams:[
-  ['GS Montecchio S. Pietro Sq. B',1238518,'stemma-gs-montecchio-san-pietro.png'],
+  ['GS Montecchio S. Pietro Sq. B',1238518,'stemma-gs-montecchio-san-pietro.png?v=68'],
   ['Atletico Montebello Vicentino',1283491],['Calcio Gazzo',70566],['Junior Monticello Sq. B',1324899],
   ['Lakota',71893],['Lions Alto Chiampo',1087001],['Ospedaletto Vicenza',1199566],['Pedezzi 1950',1323842],
   ['PGS Concordia',1005793],['Piana 2025',1324896],['Recoaro',1057845],['Rino Toniolo',1098609],
@@ -38,25 +38,48 @@ window.TEAM_FIXTURES = {
   [30,1324896,1238518,'2027-04-25','15:30','Valdagno','30.5/piana-2025-montecchio-s-pietro-sq-b']
  ].map(([round,homeId,awayId,date,time,place,path])=>({round,homeId,awayId,date,time,place,status:'scheduled',url:`https://www.tuttocampo.it/Veneto/TerzaCategoria/GironeAVicenza/Partita/${path}`})),
  venues:{
-  1238518:'Angelo Giuriato, Via Circonvallazione 43-47, Montecchio Maggiore',1005793:'Via Guglielmo Marconi, Schio',
-  1087001:'Via Santo 31, Chiampo',1199567:'Via Luigi Einaudi, Vicenza',1199590:'Montecchio Maggiore',70566:'Via Dello Sport 19, Gazzo Padovano',
-  1324897:'Via Capovilla, Capovilla',1283491:'Via G. Cederle 26, Montebello Vicentino',1098609:'Via Don Angelo Ziliotto, Thiene',
-  65290:'Via Monsignor Pietro Bicego, Valli del Pasubio',1199566:'Via A. Palladio, Ospedaletto',1324899:'Via Aldo Moro 6, Monticello Conte Otto',
-  71893:'Via Astico, Fara Vicentino',1057845:'Recoaro Terme',1324896:'Via Chiesa di Piana, Valdagno',1323842:'Via Lago Di Alleghe, Vicenza'
+  1238518:{name:'Angelo Giuriato',address:'Via Circonvallazione 43-47, Montecchio Maggiore'},1005793:{name:'Sintetico comunale di Santorso',address:'Via Guglielmo Marconi, Schio'},
+  1087001:{name:'Campo sportivo Arso',address:'Via Santo 31, Chiampo'},1199567:{name:'Campo comunale',address:'Via Luigi Einaudi, Vicenza'},1199590:{name:'Campo San Vitale',address:'Montecchio Maggiore'},70566:{name:'Comunale',address:'Via Dello Sport 19, Gazzo Padovano'},
+  1324897:{name:'Campo comunale Capovilla',address:'Via Capovilla, Capovilla'},1283491:{name:'Parrocchiale Don Bosco',address:'Via G. Cederle 26, Montebello Vicentino'},1098609:{name:'Campo Rino Toniolo',address:'Via Don Angelo Ziliotto, Thiene'},
+  65290:{name:'Valli Stadium',address:'Via Monsignor Pietro Bicego, Valli del Pasubio'},1199566:{name:'Campo comunale Roberto Buzzolan',address:'Via A. Palladio, Ospedaletto'},1324899:{name:'Campo sintetico Antonio Girardo',address:'Via Aldo Moro 6, Monticello Conte Otto'},
+  71893:{name:'Comunale Fara Vicentino',address:'Via Astico, Fara Vicentino'},1057845:{name:'Comunale',address:'Recoaro Terme'},1324896:{name:'Stadio comunale Belvedere di Piana',address:'Via Chiesa di Piana, Valdagno'},1323842:{name:'Campo sportivo Laghetto',address:'Via Lago Di Alleghe, Vicenza'}
  }
 };
 
-(()=>{
- const TEAM_ID=1238518, data=window.TEAM_FIXTURES;
- const team=id=>data.teams.find(item=>item.id===id);
- const matchDate=match=>new Date(`${match.date}T${match.time}:00`);
- const next=data.matches.filter(match=>matchDate(match)>=new Date()).sort((a,b)=>matchDate(a)-matchDate(b))[0];
- if(!next)return;
- const home=team(next.homeId),away=team(next.awayId);
- const formatDate=value=>new Intl.DateTimeFormat('it-IT',{weekday:'long',day:'numeric',month:'long'}).format(value);
- const teamCard=(item,side)=>`<div class="next-team next-team-${side}"><img src="${item.logo}" alt="Stemma ${item.name}" width="56" height="56"><strong>${item.name}</strong></div>`;
- const maps=`<a class="next-match-directions" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.venues[next.homeId]||next.place)}" target="_blank" rel="noopener noreferrer">📍 Posizione campo</a>`;
- const html=`<section class="next-match" aria-label="Prossima partita"><div class="next-match-kicker">PROSSIMA PARTITA · GIORNATA ${next.round}</div><div class="next-match-date">${formatDate(matchDate(next))} · ore ${next.time}</div><div class="next-match-teams">${teamCard(home,'home')}<span class="next-match-vs">VS</span>${teamCard(away,'away')}</div><div class="next-match-meta"><span>${next.place}</span><span>${data.competition}</span></div><div class="next-match-links"><a href="${next.url}" target="_blank" rel="noopener noreferrer">Partita su Tuttocampo</a>${maps}<a href="${data.source}" target="_blank" rel="noopener noreferrer">Calendario completo</a></div></section>`;
- const mount=()=>{const root=document.querySelector('.content');if(root&&!root.querySelector('.next-match'))root.insertAdjacentHTML('afterbegin',html);};
- document.addEventListener('DOMContentLoaded',mount); new MutationObserver(mount).observe(document.body,{childList:true,subtree:true});
+(function () {
+ const data=window.TEAM_FIXTURES, TEAM_ID=1238518, zone='Europe/Rome';
+ function kickoff(match) {
+  const parts=(match.date+'T'+match.time).split(/[-T:]/).map(Number), wall=Date.UTC(parts[0],parts[1]-1,parts[2],parts[3],parts[4]);
+  let stamp=wall;
+  for(let i=0;i<2;i++){
+   const formatted=new Intl.DateTimeFormat('en-GB',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(stamp);
+   const p=Object.fromEntries(formatted.map(x=>[x.type,x.value])), asUTC=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second);
+   stamp=wall-(asUTC-stamp);
+  }
+  return stamp;
+ }
+ function select(now=Date.now()){return data.matches.filter(m=>m.status==='scheduled'&&Number.isFinite(kickoff(m))&&now<kickoff(m)).sort((a,b)=>kickoff(a)-kickoff(b))[0]||null;}
+ function escape(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+ function team(id){
+  const t=data.teams.find(item=>item.id===id), isGs=id===TEAM_ID;
+  const name=isGs?'Montecchio S. Pietro':t.name;
+  return `<div class="next-match-team"><img src="${escape(t.logo)}" alt="Stemma ${escape(t.name)}" width="42" height="50"><strong>${escape(name)}${isGs?'<span>Sq. B</span>':''}</strong></div>`;
+ }
+ function directions(m){
+  if(m.awayId!==TEAM_ID)return '';
+  const venue=m.venue||(data.venues||{})[m.homeId];
+  if(!venue||!venue.address)return '';
+  const destination=venue.name+', '+venue.address+', Italia', url='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(destination);
+  return `<div class="match-venue"><div><strong>${escape(venue.name)}</strong><span>${escape(venue.address)}</span></div><a class="match-maps" href="${escape(url)}" target="_blank" rel="noopener noreferrer" aria-label="Apri in Maps: ${escape(destination)}"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m21 3-7 18-4-7-7-4Z"/><path d="m10 14 11-11"/></svg>Apri in Maps</a></div>`;
+ }
+ function contents(now=Date.now()){
+  const m=select(now);
+  if(!m)return `<div class="next-match-top"><span>NEXT MATCH</span></div><p>Nessuna prossima partita nel calendario caricato.</p><div class="next-match-bottom"><a href="${data.source}" target="_blank" rel="noopener noreferrer">Verifica su Tuttocampo ↗</a></div>`;
+  const date=new Intl.DateTimeFormat('it-IT',{timeZone:zone,weekday:'short',day:'numeric',month:'short'}).format(kickoff(m));
+  return `<div class="next-match-top"><span><i></i>${now>=kickoff(m)?'MATCH DAY':'NEXT MATCH'}</span><span class="next-match-demo">${m.round}ª GIORNATA</span></div><div class="next-match-teams">${team(m.homeId)}<div class="next-match-time"><span>${escape(date)}</span><strong>${escape(m.time)}</strong><small>Ora italiana</small></div>${team(m.awayId)}</div><div class="next-match-bottom"><span>${m.homeId===TEAM_ID?'In casa':'In trasferta'} · ${escape(m.place)}</span><a href="${escape(m.url)}" target="_blank" rel="noopener noreferrer">Tuttocampo ↗</a></div>${directions(m)}`;
+ }
+ window.MatchCalendar={kickoff,select,contents,directions};
+ window.renderNextMatch=()=>`<section id="nextMatchBanner" class="next-match" aria-label="Prossima partita">${contents()}</section>`;
+ function refresh(){const banner=document.getElementById('nextMatchBanner');if(banner)banner.innerHTML=contents();}
+ setInterval(refresh,60000); document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();}); window.addEventListener('pageshow',refresh);
 })();

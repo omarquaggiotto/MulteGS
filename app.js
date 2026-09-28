@@ -1765,7 +1765,7 @@ function renderHome() {
         <div id="birthdayBanners">${renderBirthdayBanners()}</div>
         <section class="team-pass" aria-label="Riepilogo economico squadra">
             <div class="team-pass-header">
-                <div class="team-pass-crest"><img src="stemma-gs-montecchio-san-pietro.png" alt="Stemma GS Montecchio San Pietro" width="48" height="58"></div>
+                <div class="team-pass-crest"><img src="stemma-gs-montecchio-san-pietro.png?v=68" alt="Stemma GS Montecchio San Pietro" width="48" height="58"></div>
                 <div><span class="team-pass-eyebrow">IL NOSTRO SPOGLIATOIO</span><h2>GS Montecchio <span>San Pietro</span></h2><p>Stagione ${escapeHtml(state.season)}</p></div>
 
             </div>
@@ -2749,13 +2749,13 @@ function createPaymentsExportCanvas(mode = "all") {
     const tableWidth = columns.reduce((total, width) => total + width, 0);
     const tableLeft = padding;
 
-    context.fillStyle = "#f7f9fc";
+    context.fillStyle = "#f3f8f4";
     context.fillRect(0, 0, logicalWidth, logicalHeight);
 
-    context.fillStyle = "#13213a";
+    context.fillStyle = "#10271a";
     context.font = "700 27px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
     context.fillText(title, tableLeft, 43);
-    context.fillStyle = "#5b677a";
+    context.fillStyle = "#52665a";
     context.font = "500 15px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
     context.fillText(
         exportMode === "due"
@@ -2765,7 +2765,7 @@ function createPaymentsExportCanvas(mode = "all") {
         74
     );
 
-    context.fillStyle = "#203657";
+    context.fillStyle = "#10271a";
     context.fillRect(tableLeft, titleHeight, tableWidth, headerHeight);
     context.font = "700 14px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
     context.fillStyle = "#ffffff";
@@ -2780,9 +2780,9 @@ function createPaymentsExportCanvas(mode = "all") {
         const y = titleHeight + headerHeight + index * rowHeight;
         const isEven = index % 2 === 0;
 
-        context.fillStyle = isEven ? "#ffffff" : "#eef3f9";
+        context.fillStyle = isEven ? "#ffffff" : "#edf6f0";
         context.fillRect(tableLeft, y, tableWidth, rowHeight);
-        context.strokeStyle = "#d7e0ec";
+        context.strokeStyle = "#cfe0d4";
         context.lineWidth = 1;
         context.strokeRect(tableLeft, y, tableWidth, rowHeight);
 
@@ -2802,7 +2802,7 @@ function createPaymentsExportCanvas(mode = "all") {
                 : "600 16px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
             context.fillStyle = columnIndex === 2 && summary.remaining > 0
                 ? "#ba2a31"
-                : "#172236";
+                : "#15271b";
             context.fillText(String(value), left + 15, y + rowHeight / 2, columns[columnIndex] - 30);
             left += columns[columnIndex];
         });
@@ -2880,14 +2880,14 @@ function exportSeasonDetailedImage() {
         if (!context) throw new Error("Memoria insufficiente per generare il PNG");
         context.scale(scale, scale);
         context.textBaseline = "middle";
-        context.fillStyle = "#eef4fb";
+        context.fillStyle = "#edf6f0";
         context.fillRect(0, 0, width, height);
-        context.fillStyle = "#10233f";
+        context.fillStyle = "#07120b";
         context.fillRect(0, 0, width, 124);
         context.fillStyle = "#ffffff";
         context.font = "800 30px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
         context.fillText(`Schede giocatori — ${state.season}`, padding, 43);
-        context.fillStyle = "#bcd0e8";
+        context.fillStyle = "#b9d8c2";
         context.font = "500 15px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
         context.fillText(`${state.team} · aggiornato a ${today.toLocaleDateString("it-IT")}`, padding, 79);
 
@@ -2900,14 +2900,14 @@ function exportSeasonDetailedImage() {
             context.beginPath();
             context.roundRect(x, y, cardWidth, cardHeight, 20);
             context.fill();
-            context.fillStyle = entry.remaining > 0 ? "#dc3b45" : "#2f6fdd";
+            context.fillStyle = entry.remaining > 0 ? "#dc3b45" : "#31c567";
             context.beginPath();
             context.roundRect(x, y, 7, cardHeight, [20, 0, 0, 20]);
             context.fill();
-            context.fillStyle = "#13213a";
+            context.fillStyle = "#10271a";
             context.font = "800 20px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
             context.fillText(entry.player, x + 24, y + 31, cardWidth - 48);
-            context.fillStyle = entry.remaining > 0 ? "#b4232c" : "#2458b5";
+            context.fillStyle = entry.remaining > 0 ? "#b4232c" : "#16763c";
             context.font = "750 13px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
             context.fillText(entry.remaining > 0 ? `DA SALDARE ${money(entry.remaining)}` : "✓ SALDATO", x + 24, y + 59);
             const metrics = [
@@ -2916,14 +2916,14 @@ function exportSeasonDetailedImage() {
             ];
             metrics.forEach(([label, value], metricIndex) => {
                 const metricX = x + 24 + metricIndex * ((cardWidth - 48) / 4);
-                context.fillStyle = "#78869a";
+                context.fillStyle = "#65766b";
                 context.font = "700 10px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
                 context.fillText(label, metricX, y + 101);
-                context.fillStyle = "#172236";
+                context.fillStyle = "#15271b";
                 context.font = "800 17px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
                 context.fillText(value, metricX, y + 126, (cardWidth - 62) / 4);
             });
-            context.fillStyle = "#7b8798";
+            context.fillStyle = "#66786d";
             context.font = "600 12px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
             context.fillText(`${entry.settled}/${entry.active} mensilità saldate`, x + 24, y + 155);
         });
@@ -2975,7 +2975,7 @@ function openSeasonReport(includePlayerPages = true) {
     const ranking = [...entries].sort((a, b) => b.fines - a.fines || compareItalian(a.player, b.player));
     const reportHeader = (label = "Riepilogo stagione") => `
         <header class="season-pdf-header">
-            <div class="season-pdf-brand"><img src="stemma-gs-montecchio-san-pietro.png" alt=""><div><strong>Multe <span>GS</span></strong><small>GS Montecchio San Pietro</small></div></div>
+            <div class="season-pdf-brand"><img src="stemma-gs-montecchio-san-pietro.png?v=68" alt=""><div><strong>Multe <span>GS</span></strong><small>GS Montecchio San Pietro</small></div></div>
             <div><small>${label}</small><strong>${escapeHtml(state.season)}</strong></div>
         </header>`;
     const metric = (label, value, tone) => `<div class="season-pdf-metric ${tone}"><small>${label}</small><strong>${value}</strong></div>`;
@@ -3010,7 +3010,7 @@ function openSeasonReport(includePlayerPages = true) {
     openModal(includePlayerPages ? "Riepilogo stagione completo" : "Riepilogo stagione", `
         <div class="season-report-toolbar"><p>${includePlayerPages ? "Anteprima completa" : "Anteprima compatta"}: ${pageCount} pagine</p><button class="btn" id="printSeasonReport" type="button">Salva / stampa PDF</button></div>
         <div class="season-report-document ${includePlayerPages ? "season-report-detailed" : "season-report-compact"}">
-            <section class="season-report-page season-cover-page"><img src="stemma-gs-montecchio-san-pietro.png" alt="Stemma GS Montecchio San Pietro"><h1>Multe <span>GS</span></h1><h2>GS Montecchio San Pietro</h2><hr><p>Riepilogo stagione</p><strong>${escapeHtml(state.season)}</strong><small>Stessi amici.<br>Più responsabilità.</small><footer>Generato il ${today.toLocaleDateString("it-IT")} <span>Pagina 1 di ${pageCount}</span></footer></section>
+            <section class="season-report-page season-cover-page"><img src="stemma-gs-montecchio-san-pietro.png?v=68" alt="Stemma GS Montecchio San Pietro"><h1>Multe <span>GS</span></h1><h2>GS Montecchio San Pietro</h2><hr><p>Riepilogo stagione</p><strong>${escapeHtml(state.season)}</strong><small>Stessi amici.<br>Più responsabilità.</small><footer>Generato il ${today.toLocaleDateString("it-IT")} <span>Pagina 1 di ${pageCount}</span></footer></section>
             <section class="season-report-page">${reportHeader()}<h2 class="season-report-section-title">Panoramica generale</h2><div class="season-overview-grid">${metric("Quote", money(teamTotals.base), "green")}${metric("Multe", money(teamTotals.fines), "red")}${metric("Totale dovuto", money(teamTotals.total), "blue")}${metric("Totale versato", money(teamTotals.paid), "green")}${metric("Da incassare", money(teamTotals.remaining), "orange")}${metric("Numero multe", totalFinesCount, "purple")}</div><h2 class="season-report-section-title">Andamento mensile</h2><div class="season-month-chart">${monthBars}</div><footer>Multe GS - GS Montecchio San Pietro <span>Pagina 2 di ${pageCount}</span></footer></section>
             <section class="season-report-page">${reportHeader()}<h2 class="season-report-section-title">Riepilogo pagamenti</h2><table class="season-report-table"><thead><tr><th>#</th><th>Giocatore</th><th>Quote</th><th>Multe</th><th>Totale</th><th>Versato</th><th>Rimanente</th></tr></thead><tbody>${paymentRows}</tbody><tfoot><tr><th colspan="2">Totale squadra</th><th>${money(teamTotals.base)}</th><th>${money(teamTotals.fines)}</th><th>${money(teamTotals.total)}</th><th>${money(teamTotals.paid)}</th><th>${money(teamTotals.remaining)}</th></tr></tfoot></table><footer>Multe GS - GS Montecchio San Pietro <span>Pagina 3 di ${pageCount}</span></footer></section>
             <section class="season-report-page">${reportHeader()}<h2 class="season-report-section-title">Classifica generale multe</h2><table class="season-report-table season-ranking-table"><thead><tr><th>#</th><th>Giocatore</th><th>N° multe</th><th>Totale multe</th></tr></thead><tbody>${rankingRows}</tbody></table><footer>Multe GS - GS Montecchio San Pietro <span>Pagina 4 di ${pageCount}</span></footer></section>

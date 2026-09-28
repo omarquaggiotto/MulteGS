@@ -2149,7 +2149,7 @@ body.modal-open .global-fab {
 
     box-shadow:
         0 6px 14px rgba(21, 148, 71, 0.20);
-   
+
 }
 @media (max-width: 600px) {
 
@@ -3258,32 +3258,6 @@ body.modal-open::after { visibility: hidden; }
 .match-maps { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:44px; padding:0 12px; border-radius:12px; background:#71dec11a; border:1px solid #71dec147; color:#a4efdc; text-decoration:none; font-size:11px; font-weight:700; }
 .match-maps:focus-visible { outline:2px solid #71dec1; outline-offset:3px; }
 
-/* Layout della scheda partita generata da next-match.js. */
-.next-match-kicker { font-size:10px; font-weight:800; letter-spacing:.11em; color:#b9f3ca; }
-.next-match-date { margin-top:6px; font-size:15px; font-weight:650; line-height:1.35; }
-.next-match .next-match-teams { grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:12px; padding:20px 0 17px; }
-.next-team { min-width:0; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; }
-.next-team img { width:56px; height:56px; object-fit:contain; border-radius:10px; background:#ffffff; padding:3px; }
-.next-team strong { max-width:125px; font-size:13px; line-height:1.25; overflow-wrap:normal; word-break:normal; }
-.next-match-vs { align-self:center; color:#b9c9bd; font-size:13px; font-weight:800; }
-.next-match-meta { display:flex; flex-wrap:wrap; gap:5px 14px; padding:12px 0; border-top:1px solid #ffffff1f; color:#bfd0c4; font-size:10px; line-height:1.4; }
-.next-match-meta span { display:flex; align-items:center; min-width:0; }
-.next-match-meta span+span::before { content:'•'; margin-right:14px; color:#31c567; }
-.next-match-links { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:0 0 16px; }
-.next-match-links a { min-height:42px; display:flex; align-items:center; justify-content:center; padding:8px 10px; border:1px solid #71dec145; border-radius:12px; color:#d9f7e3; background:#ffffff0b; text-align:center; text-decoration:none; font-size:10px; font-weight:750; line-height:1.25; }
-.next-match-links a.next-match-directions { color:#07120b; background:#71dec1; border-color:#71dec1; }
-.next-match-links a:focus-visible { outline:2px solid #71dec1; outline-offset:2px; }
-@media(max-width:520px) {
- .next-match { margin-top:0; padding:16px; }
- .next-match .next-match-teams { gap:8px; padding:18px 0 15px; }
- .next-team img { width:52px; height:52px; }
- .next-team strong { max-width:110px; font-size:12px; }
- .next-match-meta { display:grid; gap:4px; }
- .next-match-meta span+span::before { content:none; }
- .next-match-links { grid-template-columns:repeat(2,minmax(0,1fr)); padding-bottom:0; }
- .next-match-links a:last-child { grid-column:1/-1; }
-}
-
 /* Anteprima locale: riepilogo mensile in un unico riquadro. */
 .home-stat-section { margin:0 0 24px; padding:20px; border:1px solid var(--border); border-radius:22px; background:var(--surface); box-shadow:0 6px 22px #071a3308; }
 .home-stat-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 18px; }
@@ -3466,14 +3440,14 @@ body.modal-open::after { visibility: hidden; }
  color:#f8fafc;
 }
 .season-report-copy { min-width:0; }
-.season-report-kicker { display:block; margin-bottom:7px; color:#9ec8ff; font-size:10px; font-weight:900; letter-spacing:.14em; }
+.season-report-kicker { display:block; margin-bottom:7px; color:#9ce8b3; font-size:10px; font-weight:900; letter-spacing:.14em; }
 .season-report-card h2 { margin:0; color:#fff; font-size:22px; }
-.season-report-card p { margin:7px 0 0; color:#bfd0e4; font-size:12px; line-height:1.5; }
+.season-report-card p { margin:7px 0 0; color:#c1dac8; font-size:12px; line-height:1.5; }
 .season-report-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 .season-report-card .season-report-button { min-width:0; padding:13px; border-color:#ffffff20; background:#ffffff0e; color:#fff; box-shadow:none; }
 .season-report-card .season-report-button:hover { background:#ffffff18; }
 .season-report-card .season-report-button .export-button-icon { background:#ffffff16; color:#fff; }
-.season-report-card .season-report-button small { color:#bfd0e4; }
+.season-report-card .season-report-button small { color:#c1dac8; }
 .payment-month-exports { grid-template-columns:repeat(2,minmax(0,1fr)); }
 
 .multario-intro { padding:15px 17px; }
@@ -3508,23 +3482,23 @@ body.modal-open::after { visibility: hidden; }
 .season-report-modal > .row { position:sticky; top:0; z-index:12; margin:0; padding:16px 18px; background:var(--surface); border-bottom:1px solid var(--border); }
 .season-report-toolbar { position:sticky; top:65px; z-index:11; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 18px; background:var(--surface); border-bottom:1px solid var(--border); }
 .season-report-toolbar p { margin:0; color:var(--muted); font-size:12px; }
-.season-report-document { display:grid; gap:18px; padding:18px; background:#dfe6ee; }
-.season-report-page { position:relative; box-sizing:border-box; width:min(794px,100%); min-height:1123px; margin:auto; padding:32px 36px 52px; overflow:hidden; background:#fff; color:#142238; box-shadow:0 12px 35px #10233f18; font-family:Inter,system-ui,-apple-system,sans-serif; }
-.season-pdf-header { display:flex; align-items:center; justify-content:space-between; gap:20px; padding-bottom:14px; border-bottom:1px solid #cfdae6; }
+.season-report-document { display:grid; gap:18px; padding:18px; background:#dfe9e1; }
+.season-report-page { position:relative; box-sizing:border-box; width:min(794px,100%); min-height:1123px; margin:auto; padding:32px 36px 52px; overflow:hidden; background:#fff; color:#10271a; box-shadow:0 12px 35px #07120b20; font-family:Inter,system-ui,-apple-system,sans-serif; }
+.season-pdf-header { display:flex; align-items:center; justify-content:space-between; gap:20px; padding-bottom:14px; border-bottom:1px solid #cdded2; }
 .season-pdf-brand { display:flex; align-items:center; gap:10px; }
 .season-pdf-brand img { width:54px; height:54px; object-fit:contain; }
 .season-pdf-brand div { display:grid; }
-.season-pdf-brand strong { font-size:24px; line-height:1; }.season-pdf-brand strong span,.season-cover-page h1 span { color:#63a5ff; }
+.season-pdf-brand strong { font-size:24px; line-height:1; }.season-pdf-brand strong span,.season-cover-page h1 span { color:#31c567; }
 .season-pdf-brand small { margin-top:4px; font-size:10px; }
-.season-pdf-header > div:last-child { display:grid; text-align:right; }.season-pdf-header > div:last-child small { font-size:10px; }.season-pdf-header > div:last-child strong { color:#245fbd; font-size:22px; }
+.season-pdf-header > div:last-child { display:grid; text-align:right; }.season-pdf-header > div:last-child small { font-size:10px; }.season-pdf-header > div:last-child strong { color:#16763c; font-size:22px; }
 .season-report-section-title { margin:22px 0 14px; font-size:18px; text-transform:uppercase; letter-spacing:.015em; }
 .season-overview-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-.season-pdf-metric { min-width:0; padding:16px; border-radius:12px; background:#f3f7fb; }
+.season-pdf-metric { min-width:0; padding:16px; border-radius:12px; background:#f0f6f2; }
 .season-pdf-metric small { display:block; margin-bottom:7px; font-size:10px; font-weight:750; }.season-pdf-metric strong { display:block; font-size:20px; overflow-wrap:anywhere; }
-.season-pdf-metric.green { background:#edf5ff; color:#245fbd; }.season-pdf-metric.red { background:#fff0f1; color:#bd2630; }.season-pdf-metric.blue { background:#e7f0ff; color:#174f9e; }.season-pdf-metric.orange { background:#fff5e7; color:#de4a16; }.season-pdf-metric.purple { background:#f1efff; color:#5c48bd; }
-.season-month-chart { display:flex; align-items:end; gap:12px; height:255px; padding:18px 18px 0; border-left:1px solid #d7e1ec; border-bottom:1px solid #d7e1ec; background:repeating-linear-gradient(to bottom,#fff 0,#fff 50px,#e9eef4 51px); }
+.season-pdf-metric.green { background:#e8f7ed; color:#16763c; }.season-pdf-metric.red { background:#fff0f1; color:#bd2630; }.season-pdf-metric.blue { background:#daf1e2; color:#0d5c2d; }.season-pdf-metric.orange { background:#fff5e7; color:#b94215; }.season-pdf-metric.purple { background:#edf4ef; color:#315b3d; }
+.season-month-chart { display:flex; align-items:end; gap:12px; height:255px; padding:18px 18px 0; border-left:1px solid #d4e2d8; border-bottom:1px solid #d4e2d8; background:repeating-linear-gradient(to bottom,#fff 0,#fff 50px,#e9f0eb 51px); }
 .season-chart-column { display:grid; grid-template-rows:1fr 24px; flex:1; align-self:stretch; min-width:0; text-align:center; }.season-chart-bars { display:flex; align-items:end; justify-content:center; gap:3px; min-height:0; }.season-chart-bars i,.season-chart-bars b { display:block; width:34%; max-width:18px; border-radius:4px 4px 0 0; }.season-chart-bars i { background:#31c567; }.season-chart-bars b { background:#f04450; }.season-chart-column span { padding-top:7px; font-size:9px; text-transform:capitalize; }
-.season-report-table { width:100%; border-collapse:collapse; font-size:10px; }.season-report-table th,.season-report-table td { padding:7px 6px; border:1px solid #d5dfe9; text-align:right; }.season-report-table th:nth-child(2),.season-report-table td:nth-child(2) { text-align:left; }.season-report-table thead { background:#edf3f8; }.season-report-table tbody tr:nth-child(even) { background:#f7f9fc; }.season-report-table tfoot { background:#e9f0f7; font-weight:850; text-transform:uppercase; }.season-report-table .is-due { background:#fff1cf; color:#bd3a21; font-weight:850; }
+.season-report-table { width:100%; border-collapse:collapse; font-size:10px; }.season-report-table th,.season-report-table td { padding:7px 6px; border:1px solid #d4e1d8; text-align:right; }.season-report-table th:nth-child(2),.season-report-table td:nth-child(2) { text-align:left; }.season-report-table thead { background:#e5f2e9; }.season-report-table tbody tr:nth-child(even) { background:#f5f9f6; }.season-report-table tfoot { background:#dcece1; font-weight:850; text-transform:uppercase; }.season-report-table .is-due { background:#fff1cf; color:#bd3a21; font-weight:850; }
 .season-ranking-table { font-size:12px; }.season-ranking-table th,.season-ranking-table td { padding:9px 10px; }.season-ranking-table th:first-child,.season-ranking-table td:first-child { width:42px; text-align:center; }.season-ranking-table th:nth-child(3),.season-ranking-table td:nth-child(3),.season-ranking-table th:nth-child(4),.season-ranking-table td:nth-child(4) { text-align:center; }
 .season-player-hero { display:flex; align-items:center; gap:16px; margin-top:18px; padding:14px; border:1px solid #d8e2ec; border-radius:15px; }.season-player-hero .player-portrait { width:64px; height:64px; border-radius:50%; }.season-player-hero > div { flex:1; min-width:0; }.season-player-hero h2 { margin:0; font-size:23px; }.season-player-hero p { margin:5px 0 0; color:#6d798a; font-size:11px; }.season-player-hero > b { align-self:flex-start; font-size:14px; }
 .season-player-metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin:14px 0; }.season-player-metrics .season-pdf-metric { padding:12px; text-align:center; }.season-player-metrics .season-pdf-metric:nth-last-child(-n+2) { grid-column:span 2; }.season-player-fines { font-size:10px; }.season-player-fines th:nth-child(1),.season-player-fines td:nth-child(1) { width:82px; text-align:left; }.season-player-fines th:nth-child(3),.season-player-fines td:nth-child(3) { width:110px; text-align:left; }.season-player-fines th:last-child,.season-player-fines td:last-child { width:65px; }
