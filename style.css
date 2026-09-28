@@ -1518,7 +1518,9 @@ body.modal-open .global-fab {
 .payment-filter-intro strong { display: block; font-size: 16px; line-height: 1.25; }
 .payment-month-field { position: relative; }
 .payment-month-field .form-label { color: var(--muted); font-size: 10px; font-weight: 850; letter-spacing: .055em; text-transform: uppercase; }
-.payment-month-field .form-input { min-height: 50px; border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border)); border-radius: 14px; background-color: var(--surface-2); font-weight: 800; }
+.payment-month-field .form-input { min-height: 50px; border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border)); border-radius: 14px; background-color: var(--surface-2); color:var(--text); font-weight: 800; }
+.payment-month-field .form-input option { background:var(--surface-2); color:var(--text); }
+[data-theme="dark"] .payment-month-field .form-input { color-scheme:dark; }
 
 .payment-summary-grid {
     display: grid;
