@@ -1,4 +1,4 @@
-const CACHE_NAME = "multegs-v76-level-crests";
+const CACHE_NAME = "multegs-v77-even-team-spacing";
 const APP_SHELL = [
     "./",
     "./index.html",

@@ -62,8 +62,9 @@ window.TEAM_FIXTURES = {
  function escape(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
  function team(id){
   const t=data.teams.find(item=>item.id===id), isGs=id===TEAM_ID;
-  const name=isGs?'Montecchio S. Pietro':t.name;
-  return `<div class="next-match-team ${isGs?'is-gs-team':'is-opponent-team'}"><span class="next-match-crest"><img src="${escape(t.logo)}" alt="Stemma ${escape(t.name)}"></span><strong>${escape(name)}${isGs?'<span>Sq. B</span>':''}</strong></div>`;
+  const fullName=isGs?'Montecchio S. Pietro Sq. B':t.name, parts=fullName.match(/^(.*?)\s+Sq\. B$/i);
+  const name=parts?parts[1]:fullName, qualifier=parts?'Sq. B':'';
+  return `<div class="next-match-team ${isGs?'is-gs-team':'is-opponent-team'}"><span class="next-match-crest"><img src="${escape(t.logo)}" alt="Stemma ${escape(t.name)}"></span><strong class="${qualifier?'has-qualifier':'no-qualifier'}"><span class="next-match-name">${escape(name)}</span><span class="next-match-qualifier"${qualifier?'':' aria-hidden="true"'}>${qualifier||'&nbsp;'}</span></strong></div>`;
  }
  function directions(m){
   if(m.awayId!==TEAM_ID)return '';
