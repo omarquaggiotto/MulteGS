@@ -8,8 +8,8 @@ const APP_SHELL = [
     "./birthdays.css",
     "./next-match.js",
     "./manifest.json",
-    "./assets/stemma-gs-montecchio-san-pietro.png",
-    "./vendor/html2canvas.min.js"
+    "./stemma-gs-montecchio-san-pietro.png",
+    "./html2canvas.min.js"
 ];
 
 self.addEventListener("install", event => {

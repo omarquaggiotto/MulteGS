@@ -2,7 +2,7 @@ window.TEAM_FIXTURES = {
  updatedAt:'2026-09-28', season:'2026/27', competition:'Terza Categoria · Vicenza · Girone Unico',
  source:'https://www.tuttocampo.it/Veneto/TerzaCategoria/GironeAVicenza/Squadra/MontecchioSPietroSqB/1238518/Calendario',
  teams:[
-  ['GS Montecchio S. Pietro Sq. B',1238518,'assets/stemma-gs-montecchio-san-pietro.png'],
+  ['GS Montecchio S. Pietro Sq. B',1238518,'stemma-gs-montecchio-san-pietro.png'],
   ['Atletico Montebello Vicentino',1283491],['Calcio Gazzo',70566],['Junior Monticello Sq. B',1324899],
   ['Lakota',71893],['Lions Alto Chiampo',1087001],['Ospedaletto Vicenza',1199566],['Pedezzi 1950',1323842],
   ['PGS Concordia',1005793],['Piana 2025',1324896],['Recoaro',1057845],['Rino Toniolo',1098609],

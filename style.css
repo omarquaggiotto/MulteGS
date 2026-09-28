@@ -3186,7 +3186,7 @@ body::after {
  content: "";
  position: fixed;
  inset: 100px 0 110px;
- background: url("assets/stemma-gs-montecchio-san-pietro.png") center / min(78vw, 520px) auto no-repeat;
+ background: url("stemma-gs-montecchio-san-pietro.png") center / min(78vw, 520px) auto no-repeat;
  opacity: .055;
  pointer-events: none;
  z-index: 19;

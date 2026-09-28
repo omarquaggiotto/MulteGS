@@ -1765,7 +1765,7 @@ function renderHome() {
         <div id="birthdayBanners">${renderBirthdayBanners()}</div>
         <section class="team-pass" aria-label="Riepilogo economico squadra">
             <div class="team-pass-header">
-                <div class="team-pass-crest"><img src="assets/stemma-gs-montecchio-san-pietro.png" alt="Stemma GS Montecchio San Pietro" width="48" height="58"></div>
+                <div class="team-pass-crest"><img src="stemma-gs-montecchio-san-pietro.png" alt="Stemma GS Montecchio San Pietro" width="48" height="58"></div>
                 <div><span class="team-pass-eyebrow">IL NOSTRO SPOGLIATOIO</span><h2>GS Montecchio <span>San Pietro</span></h2><p>Stagione ${escapeHtml(state.season)}</p></div>
 
             </div>
@@ -2975,7 +2975,7 @@ function openSeasonReport(includePlayerPages = true) {
     const ranking = [...entries].sort((a, b) => b.fines - a.fines || compareItalian(a.player, b.player));
     const reportHeader = (label = "Riepilogo stagione") => `
         <header class="season-pdf-header">
-            <div class="season-pdf-brand"><img src="assets/stemma-gs-montecchio-san-pietro.png" alt=""><div><strong>Multe <span>GS</span></strong><small>GS Montecchio San Pietro</small></div></div>
+            <div class="season-pdf-brand"><img src="stemma-gs-montecchio-san-pietro.png" alt=""><div><strong>Multe <span>GS</span></strong><small>GS Montecchio San Pietro</small></div></div>
             <div><small>${label}</small><strong>${escapeHtml(state.season)}</strong></div>
         </header>`;
     const metric = (label, value, tone) => `<div class="season-pdf-metric ${tone}"><small>${label}</small><strong>${value}</strong></div>`;
@@ -3010,7 +3010,7 @@ function openSeasonReport(includePlayerPages = true) {
     openModal(includePlayerPages ? "Riepilogo stagione completo" : "Riepilogo stagione", `
         <div class="season-report-toolbar"><p>${includePlayerPages ? "Anteprima completa" : "Anteprima compatta"}: ${pageCount} pagine</p><button class="btn" id="printSeasonReport" type="button">Salva / stampa PDF</button></div>
         <div class="season-report-document ${includePlayerPages ? "season-report-detailed" : "season-report-compact"}">
-            <section class="season-report-page season-cover-page"><img src="assets/stemma-gs-montecchio-san-pietro.png" alt="Stemma GS Montecchio San Pietro"><h1>Multe <span>GS</span></h1><h2>GS Montecchio San Pietro</h2><hr><p>Riepilogo stagione</p><strong>${escapeHtml(state.season)}</strong><small>Stessi amici.<br>Più responsabilità.</small><footer>Generato il ${today.toLocaleDateString("it-IT")} <span>Pagina 1 di ${pageCount}</span></footer></section>
+            <section class="season-report-page season-cover-page"><img src="stemma-gs-montecchio-san-pietro.png" alt="Stemma GS Montecchio San Pietro"><h1>Multe <span>GS</span></h1><h2>GS Montecchio San Pietro</h2><hr><p>Riepilogo stagione</p><strong>${escapeHtml(state.season)}</strong><small>Stessi amici.<br>Più responsabilità.</small><footer>Generato il ${today.toLocaleDateString("it-IT")} <span>Pagina 1 di ${pageCount}</span></footer></section>
             <section class="season-report-page">${reportHeader()}<h2 class="season-report-section-title">Panoramica generale</h2><div class="season-overview-grid">${metric("Quote", money(teamTotals.base), "green")}${metric("Multe", money(teamTotals.fines), "red")}${metric("Totale dovuto", money(teamTotals.total), "blue")}${metric("Totale versato", money(teamTotals.paid), "green")}${metric("Da incassare", money(teamTotals.remaining), "orange")}${metric("Numero multe", totalFinesCount, "purple")}</div><h2 class="season-report-section-title">Andamento mensile</h2><div class="season-month-chart">${monthBars}</div><footer>Multe GS - GS Montecchio San Pietro <span>Pagina 2 di ${pageCount}</span></footer></section>
             <section class="season-report-page">${reportHeader()}<h2 class="season-report-section-title">Riepilogo pagamenti</h2><table class="season-report-table"><thead><tr><th>#</th><th>Giocatore</th><th>Quote</th><th>Multe</th><th>Totale</th><th>Versato</th><th>Rimanente</th></tr></thead><tbody>${paymentRows}</tbody><tfoot><tr><th colspan="2">Totale squadra</th><th>${money(teamTotals.base)}</th><th>${money(teamTotals.fines)}</th><th>${money(teamTotals.total)}</th><th>${money(teamTotals.paid)}</th><th>${money(teamTotals.remaining)}</th></tr></tfoot></table><footer>Multe GS - GS Montecchio San Pietro <span>Pagina 3 di ${pageCount}</span></footer></section>
             <section class="season-report-page">${reportHeader()}<h2 class="season-report-section-title">Classifica generale multe</h2><table class="season-report-table season-ranking-table"><thead><tr><th>#</th><th>Giocatore</th><th>N° multe</th><th>Totale multe</th></tr></thead><tbody>${rankingRows}</tbody></table><footer>Multe GS - GS Montecchio San Pietro <span>Pagina 4 di ${pageCount}</span></footer></section>

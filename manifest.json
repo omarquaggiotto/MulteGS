@@ -10,7 +10,7 @@
     "lang": "it",
     "icons": [
         {
-            "src": "assets/stemma-gs-montecchio-san-pietro.png",
+            "src": "stemma-gs-montecchio-san-pietro.png",
             "sizes": "500x445",
             "type": "image/png",
             "purpose": "any maskable"
