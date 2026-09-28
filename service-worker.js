@@ -1,4 +1,4 @@
-const CACHE_NAME = "multegs-v77-even-team-spacing";
+const CACHE_NAME = "multegs-v79-season-save-close";
 const APP_SHELL = [
     "./",
     "./index.html",

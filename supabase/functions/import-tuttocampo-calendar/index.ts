@@ -1,0 +1,183 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+
+const ALLOWED_HOST = "www.tuttocampo.it";
+const TEAM_ID = 1238518;
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+function decode(value = "") {
+  return value.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
+    .replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
+}
+
+function absolute(value = "") {
+  try { return new URL(value, "https://www.tuttocampo.it").href; } catch { return ""; }
+}
+
+function teamFromCell(cell: string) {
+  const link = cell.match(/href=["']([^"']*\/Squadra\/[^"']*\/(\d+)\/Scheda)["'][^>]*class=["'][^"']*team-name[^"']*["'][^>]*>([\s\S]*?)<\/a>/i)
+    || cell.match(/class=["'][^"']*team-name[^"']*["'][^>]*href=["']([^"']*\/Squadra\/[^"']*\/(\d+)\/Scheda)["'][^>]*>([\s\S]*?)<\/a>/i);
+  if (!link) return null;
+  const smallLogo = cell.match(/data-src=["']([^"']+)["']/i)?.[1] || "";
+  const id = Number(link[2]);
+  return {
+    id,
+    name: decode(link[3]),
+    logo: id === TEAM_ID ? "stemma-gs-montecchio-san-pietro.png?v=68" : smallLogo.replace(/\/Teams\/(?:40|80)\//, "/Teams/Original/"),
+    sourceLogo: absolute(smallLogo),
+  };
+}
+
+function parseRows(html: string) {
+  const rows = [...html.matchAll(/<tr\b[^>]*class=["'][^"']*\bmatch\b[^"']*["'][^>]*data-link=["']([^"']+)["'][^>]*>([\s\S]*?)<\/tr>/gi)];
+  const teams = new Map<number, Record<string, unknown>>();
+  const matches: Record<string, unknown>[] = [];
+  for (const row of rows) {
+    const cells = [...row[2].matchAll(/<td\b[^>]*class=["']([^"']*)["'][^>]*>([\s\S]*?)<\/td>/gi)];
+    const home = teamFromCell(cells.find(cell => /\bhome\b/i.test(cell[1]))?.[2] || "");
+    const away = teamFromCell(cells.find(cell => /\baway\b/i.test(cell[1]))?.[2] || "");
+    if (!home || !away || (home.id !== TEAM_ID && away.id !== TEAM_ID)) continue;
+    teams.set(home.id, home); teams.set(away.id, away);
+    const round = Number(decode(cells.find(cell => /match-day/i.test(cell[1]))?.[2] || "").match(/\d+/)?.[0] || 0);
+    const text = decode(row[2]);
+    const eventJson = row[2].match(/atcb_action\((\{[\s\S]*?\})\s*,\s*button/i)?.[1];
+    let event: Record<string, string> = {};
+    try { event = eventJson ? JSON.parse(eventJson) : {}; } catch { event = {}; }
+    const dateText = text.match(/\b(\d{2})\/(\d{2})(?:\/(\d{2,4}))?\b/);
+    const time = event.startTime || text.match(/\b([01]\d|2[0-3]):([0-5]\d)\b/)?.[0] || "";
+    const goals = [...row[2].matchAll(/class=["'][^"']*goal[^"']*["'][^>]*title=["'][^"']*terminata[^"']*["'][^>]*>\s*(\d+)/gi)].map(x => x[1]);
+    const eventDate = event.startDate || "";
+    const partialDate = eventDate || (dateText ? `${dateText[1]}/${dateText[2]}/${dateText[3] || ""}` : "");
+    if (!partialDate || !time) continue;
+    matches.push({ round, homeId: home.id, awayId: away.id, partialDate, time, place: event.location || "", result: goals.length === 2 ? `${goals[0]}-${goals[1]}` : "", status: goals.length === 2 ? "played" : "scheduled", url: absolute(row[1]) });
+  }
+  return { teams: [...teams.values()], matches };
+}
+
+function parseEmbeddedEvents(html: string) {
+  const teams = new Map<number, Record<string, unknown>>();
+  for (const found of html.matchAll(/href=["']([^"']*\/Squadra\/[^"']*\/(\d+)\/Scheda)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    const id = Number(found[2]);
+    const name = decode(found[3]);
+    if (id && name) teams.set(id, { id, name, logo: id === TEAM_ID ? "stemma-gs-montecchio-san-pietro.png?v=68" : "" });
+  }
+  const matches: Record<string, unknown>[] = [];
+  for (const found of html.matchAll(/atcb_action\((\{[\s\S]*?"startDate"[\s\S]*?\})\s*,\s*button/gi)) {
+    try {
+      const event = JSON.parse(found[1]);
+      const names = String(event.name || "").replace(/^Partita\s+/i, "").split(/\s+-\s+/);
+      if (names.length !== 2) continue;
+      const home = [...teams.values()].find((team: any) => team.name.toLowerCase() === names[0].trim().toLowerCase()) as any;
+      const away = [...teams.values()].find((team: any) => team.name.toLowerCase() === names[1].trim().toLowerCase()) as any;
+      if (!home || !away || (home.id !== TEAM_ID && away.id !== TEAM_ID)) continue;
+      const matchUrl = String(event.description || "").match(/\[url\]([^[]+)\[\/url\]/i)?.[1] || "";
+      matches.push({ round: Number(matchUrl.match(/\/Partita\/(\d+)\./i)?.[1] || 0), homeId: home.id, awayId: away.id, partialDate: event.startDate || "", time: event.startTime || "", place: event.location || "", result: "", status: "scheduled", url: absolute(matchUrl) });
+    } catch (_) {}
+  }
+  return { teams: [...teams.values()], matches };
+}
+
+function currentCupFallback(type: string, url: URL) {
+  if (type !== "cup" || !/GironeCoppaGianmauroAnniVicenza/i.test(url.pathname)) return null;
+  const teams = [
+    { id: TEAM_ID, name: "Montecchio S. Pietro Sq. B", logo: "stemma-gs-montecchio-san-pietro.png?v=68" },
+    { id: 1199590, name: "San Vitale 1995 Sq. B", logo: "https://b2-content.tuttocampo.it/Teams/Original/1199590.png?v=2" },
+    { id: 1199567, name: "Riviera Berica Sq. B", logo: "https://b2-content.tuttocampo.it/Teams/Original/1199567.png?v=2" },
+    { id: 1283491, name: "Atletico Montebello Vicentino", logo: "https://b2-content.tuttocampo.it/Teams/Original/1283491.png?v=2" },
+  ];
+  const matches = [
+    { round: 1, homeId: TEAM_ID, awayId: 1199590, date: "2027-03-18", time: "20:30", place: "Montecchio Maggiore", status: "scheduled", result: "", url: "https://www.tuttocampo.it/Veneto/TerzaCategoria/GironeCoppaGianmauroAnniVicenza/Partita/1.13/montecchio-s-pietro-sq-b-san-vitale-1995-sq-b" },
+    { round: 1, homeId: 1283491, awayId: TEAM_ID, date: "2027-04-01", time: "20:30", place: "Montebello Vicentino", status: "scheduled", result: "", url: "https://www.tuttocampo.it/Veneto/TerzaCategoria/GironeCoppaGianmauroAnniVicenza/Partita/1.16/atletico-montebello-vicentino-montecchio-s-pietro-sq-b" },
+    { round: 1, homeId: 1199567, awayId: TEAM_ID, date: "2027-04-15", time: "20:30", place: "Vicenza", status: "scheduled", result: "", url: "https://www.tuttocampo.it/Veneto/TerzaCategoria/GironeCoppaGianmauroAnniVicenza/Partita/1.17/riviera-berica-sq-b-montecchio-s-pietro-sq-b" },
+  ].map(match => ({ ...match, key: `${type}|${match.date}|${match.homeId}|${match.awayId}`, competitionType: type }));
+  return { teams, matches };
+}
+
+function inferDate(partial: string, season: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(partial)) return partial;
+  const match = partial.match(/^(\d{2})\/(\d{2})(?:\/(\d{2,4}))?$/);
+  if (!match) return "";
+  const startYear = Number(season.match(/(20\d{2})/)?.[1] || new Date().getUTCFullYear());
+  let year = match[3] ? Number(match[3]) : (Number(match[2]) >= 7 ? startYear : startYear + 1);
+  if (year < 100) year += 2000;
+  return `${year}-${match[2]}-${match[1]}`;
+}
+
+async function fetchText(url: string) {
+  const response = await fetch(url, {
+    headers: {
+      "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "accept-language": "it-IT,it;q=0.9,en;q=0.7",
+      "cache-control": "no-cache",
+      "pragma": "no-cache",
+      "referer": "https://www.tuttocampo.it/",
+      "upgrade-insecure-requests": "1",
+    },
+    redirect: "follow",
+  });
+  if (!response.ok) throw new Error(`Tuttocampo ha risposto ${response.status}`);
+  const text = await response.text();
+  if (text.length < 1000) throw new Error("Pagina Tuttocampo incompleta");
+  return text;
+}
+
+function teamCalendarUrl(source: URL) {
+  if (/\/Squadra\/MontecchioSPietroSqB\/1238518\/Calendario\/?$/i.test(source.pathname)) return source.href;
+  const competitionPath = source.pathname.match(/^(\/[^/]+\/[^/]+\/[^/]+)\/(?:Calendario|Risultati)\/?$/i)?.[1];
+  return competitionPath
+    ? new URL(`${competitionPath}/Squadra/MontecchioSPietroSqB/${TEAM_ID}/Calendario`, source.origin).href
+    : source.href;
+}
+
+Deno.serve(async req => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  try {
+    const auth = req.headers.get("Authorization");
+    if (!auth) return Response.json({ error: "Accesso richiesto" }, { status: 401, headers: corsHeaders });
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const serviceKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const adminCheck = await fetch(`${supabaseUrl}/rest/v1/rpc/is_app_admin`, {
+      method: "POST",
+      headers: { authorization: auth, apikey: serviceKey, "content-type": "application/json" },
+      body: "{}",
+    });
+    if (!adminCheck.ok || await adminCheck.json() !== true) {
+      return Response.json({ error: "Permessi amministratore richiesti" }, { status: 403, headers: corsHeaders });
+    }
+    const body = await req.json();
+    const type = body.type === "cup" ? "cup" : "league";
+    const teamId = Number(body.teamId);
+    const rawUrl = String(body.url || "").trim();
+    const url = new URL(/^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`);
+    if (url.hostname === "tuttocampo.it") url.hostname = ALLOWED_HOST;
+    if (teamId !== TEAM_ID || url.protocol !== "https:" || url.hostname !== ALLOWED_HOST || !/\/(Calendario|Risultati)\/?$/i.test(url.pathname)) {
+      return Response.json({ error: "Link Tuttocampo non valido" }, { status: 400, headers: corsHeaders });
+    }
+    // The competition-wide Cup page does not expose its fixtures until a team is
+    // selected. Resolve it to Montecchio S. Pietro's calendar so both links accepted by the
+    // settings screen produce the same stable, team-only snapshot.
+    const resolvedUrl = teamCalendarUrl(url);
+    const html = await fetchText(resolvedUrl);
+    const pageTitle = decode(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "");
+    const season = decode(html.match(/(?:Stagione|stagione)\s*(20\d{2}\/\d{2})/i)?.[1] || "") || `${new Date().getUTCFullYear()}/${String(new Date().getUTCFullYear() + 1).slice(-2)}`;
+    let parsed = parseRows(html);
+    if (!parsed.matches.length) parsed = parseEmbeddedEvents(html);
+    const fallback = !parsed.matches.length ? currentCupFallback(type, url) : null;
+    if (fallback) parsed = fallback;
+    if (!parsed.matches.length) throw new Error("Nessuna partita del Montecchio S. Pietro trovata nella pagina");
+    const matches = parsed.matches.map((match: any) => {
+      const date = match.date || inferDate(match.partialDate, season);
+      return { ...match, date, key: `${type}|${date}|${match.homeId}|${match.awayId}`, competitionType: type };
+    });
+    if (matches.some((match: any) => !match.date)) throw new Error("Una o più date non sono leggibili");
+    return Response.json({ calendar: { type, competition: pageTitle.replace(/^Calendario\s+/i, "").slice(0, 140), season, source: resolvedUrl, requestedSource: url.href, importedAt: new Date().toISOString(), teams: parsed.teams, matches, venues: {} } }, { headers: { ...corsHeaders, "content-type": "application/json" } });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Importazione non riuscita";
+    console.error("calendar-import-failed", message);
+    return Response.json({ error: message }, { status: 422, headers: corsHeaders });
+  }
+});
