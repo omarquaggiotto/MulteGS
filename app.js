@@ -32,6 +32,7 @@ let cloudReady = false;
 let cloudChannel = null;
 let cloudSaveTimer = null;
 let modalScrollPosition = 0;
+let birthDatesNeedCloudSync = false;
 
 
 
@@ -58,6 +59,39 @@ const defaultState = {
         "Scaramuzza Riccardo", "Sheshi Rustem", "Springer Guglielmo",
         "Vantin Giacomo", "Vezzaro Francesco", "Zanini Alessio"
     ],
+
+    // Date pubblicate nella rosa ufficiale Tuttocampo della squadra B.
+    playerBirthDates: {
+        "Balestra Riccardo": "2005-08-13",
+        "Bernardini Martino": "2006-01-25",
+        "Bigarella Riccardo": "2002-01-01",
+        "Bovolenta Denis": "2005-07-18",
+        "Calderato Matteo": "2003-01-22",
+        "Casarotto Leonardo": "2006-02-03",
+        "Cocco Luca": "2001-01-01",
+        "Dambi Tommaso": "2005-09-28",
+        "Danuso Alberto": "2001-05-02",
+        "Faccin Leonardo": "2000-09-14",
+        "Faccin Matteo": "1999-01-01",
+        "Lauriola Pietro Pio": "2007-07-25",
+        "Lunardi Daniele": "2000-04-21",
+        "Maggio Sebastiano": "2003-01-01",
+        "Mali Luka": "2007-12-24",
+        "Menon Andrea": "2001-01-01",
+        "Montagna Mattia": "2004-03-23",
+        "Okantah Emmanuel": "2004-02-03",
+        "Pescara Christian": "2006-09-11",
+        "Prempe Jr Charles Akra": "2007-05-18",
+        "Robinelli Riccardo": "2004-02-05",
+        "Rus Dorian Emanuele": "2004-07-10",
+        "Sanni Salomon": "2006-06-30",
+        "Scaramuzza Riccardo": "2004-05-07",
+        "Sheshi Rustem": "2005-05-24",
+        "Springer Guglielmo": "2004-04-30",
+        "Vantin Giacomo": "2002-01-01",
+        "Vezzaro Francesco": "2001-09-10",
+        "Zanini Alessio": "2005-10-24"
+    },
 
     playerStartMonths: {},
 
@@ -319,6 +353,13 @@ function loadState() {
                     )
                     : structuredClone(defaultState.players);
 
+            loaded.playerBirthDates = {
+                ...structuredClone(defaultState.playerBirthDates),
+                ...(loaded.playerBirthDates && typeof loaded.playerBirthDates === "object" && !Array.isArray(loaded.playerBirthDates)
+                    ? loaded.playerBirthDates
+                    : {})
+            };
+
             const seasonStartYear = Number(loaded.season.slice(0, 4)) || 2026;
             const legacyStartMonth = `${seasonStartYear}-08`;
             const savedStartMonths = loaded.playerStartMonths && typeof loaded.playerStartMonths === "object"
@@ -535,9 +576,18 @@ async function loadCloudState() {
     }
 
     if (data?.data && Object.keys(data.data).length) {
+        const savedBirthDates = data.data.playerBirthDates && typeof data.data.playerBirthDates === "object" && !Array.isArray(data.data.playerBirthDates)
+            ? data.data.playerBirthDates
+            : {};
+        birthDatesNeedCloudSync = Object.keys(defaultState.playerBirthDates)
+            .some(player => !Object.hasOwn(savedBirthDates, player));
         state = {
             ...structuredClone(defaultState),
-            ...data.data
+            ...data.data,
+            playerBirthDates: {
+                ...structuredClone(defaultState.playerBirthDates),
+                ...savedBirthDates
+            }
         };
         saveLocalState();
         return true;
@@ -563,7 +613,13 @@ function subscribeToCloud() {
                 if (!payload.new?.data) return;
                 state = {
                     ...structuredClone(defaultState),
-                    ...payload.new.data
+                    ...payload.new.data,
+                    playerBirthDates: {
+                        ...structuredClone(defaultState.playerBirthDates),
+                        ...(payload.new.data.playerBirthDates && typeof payload.new.data.playerBirthDates === "object" && !Array.isArray(payload.new.data.playerBirthDates)
+                            ? payload.new.data.playerBirthDates
+                            : {})
+                    }
                 };
                 saveLocalState();
                 render();
@@ -580,6 +636,11 @@ async function initializeCloud() {
     const hasCloudState = await loadCloudState();
     cloudReady = hasCloudState !== null;
 
+    if (isAdmin && hasCloudState && birthDatesNeedCloudSync) {
+        birthDatesNeedCloudSync = false;
+        queueCloudSave();
+    }
+
     if (isAdmin && !hasCloudState) {
         queueCloudSave();
     }
@@ -593,6 +654,10 @@ async function initializeCloud() {
             await refreshAccess();
             const hasData = await loadCloudState();
             cloudReady = hasData !== null;
+            if (isAdmin && hasData && birthDatesNeedCloudSync) {
+                birthDatesNeedCloudSync = false;
+                queueCloudSave();
+            }
             if (isAdmin && !hasData) queueCloudSave();
             render();
         }, 0);

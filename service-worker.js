@@ -1,4 +1,4 @@
-const CACHE_NAME = "multegs-v68-transparent-crest";
+const CACHE_NAME = "multegs-v69-roster-birthdays";
 const APP_SHELL = [
     "./",
     "./index.html",

@@ -1,6 +1,8 @@
 // La rosa iniziale proviene dalla scheda pubblica Tuttocampo della squadra B.
 // Suggestions are applied only by an online Admin, to exact existing names.
-const birthdaySuggestions = {};
+const birthdaySuggestions = {
+ 'Balestra Riccardo':'2005-08-13','Bernardini Martino':'2006-01-25','Bigarella Riccardo':'2002-01-01','Bovolenta Denis':'2005-07-18','Calderato Matteo':'2003-01-22','Casarotto Leonardo':'2006-02-03','Cocco Luca':'2001-01-01','Dambi Tommaso':'2005-09-28','Danuso Alberto':'2001-05-02','Faccin Leonardo':'2000-09-14','Faccin Matteo':'1999-01-01','Lauriola Pietro Pio':'2007-07-25','Lunardi Daniele':'2000-04-21','Maggio Sebastiano':'2003-01-01','Mali Luka':'2007-12-24','Menon Andrea':'2001-01-01','Montagna Mattia':'2004-03-23','Okantah Emmanuel':'2004-02-03','Pescara Christian':'2006-09-11','Prempe Jr Charles Akra':'2007-05-18','Robinelli Riccardo':'2004-02-05','Rus Dorian Emanuele':'2004-07-10','Sanni Salomon':'2006-06-30','Scaramuzza Riccardo':'2004-05-07','Sheshi Rustem':'2005-05-24','Springer Guglielmo':'2004-04-30','Vantin Giacomo':'2002-01-01','Vezzaro Francesco':'2001-09-10','Zanini Alessio':'2005-10-24'
+};
 let birthdayDismissedMemory = {};
 function birthdayToday(now=new Date()) {
  const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Rome',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now).map(x=>[x.type,x.value]));
