@@ -1,0 +1,19 @@
+{
+    "name": "Multe GS",
+    "short_name": "Multe GS",
+    "description": "Gestione multe GS Montecchio San Pietro - Squadra B",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#050906",
+    "theme_color": "#07120b",
+    "orientation": "portrait",
+    "lang": "it",
+    "icons": [
+        {
+            "src": "assets/stemma-gs-montecchio-san-pietro.png",
+            "sizes": "500x445",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
