@@ -52,10 +52,10 @@ window.TEAM_FIXTURES = {
  const matchDate=match=>new Date(`${match.date}T${match.time}:00`);
  const next=data.matches.filter(match=>matchDate(match)>=new Date()).sort((a,b)=>matchDate(a)-matchDate(b))[0];
  if(!next)return;
- const home=team(next.homeId),away=team(next.awayId), awayGame=next.awayId===TEAM_ID;
+ const home=team(next.homeId),away=team(next.awayId);
  const formatDate=value=>new Intl.DateTimeFormat('it-IT',{weekday:'long',day:'numeric',month:'long'}).format(value);
  const teamCard=(item,side)=>`<div class="next-team next-team-${side}"><img src="${item.logo}" alt="Stemma ${item.name}" width="56" height="56"><strong>${item.name}</strong></div>`;
- const maps=awayGame?`<a class="next-match-directions" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.venues[next.homeId]||next.place)}" target="_blank" rel="noopener noreferrer">Indicazioni</a>`:'';
+ const maps=`<a class="next-match-directions" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.venues[next.homeId]||next.place)}" target="_blank" rel="noopener noreferrer">📍 Posizione campo</a>`;
  const html=`<section class="next-match" aria-label="Prossima partita"><div class="next-match-kicker">PROSSIMA PARTITA · GIORNATA ${next.round}</div><div class="next-match-date">${formatDate(matchDate(next))} · ore ${next.time}</div><div class="next-match-teams">${teamCard(home,'home')}<span class="next-match-vs">VS</span>${teamCard(away,'away')}</div><div class="next-match-meta"><span>${next.place}</span><span>${data.competition}</span></div><div class="next-match-links"><a href="${next.url}" target="_blank" rel="noopener noreferrer">Partita su Tuttocampo</a>${maps}<a href="${data.source}" target="_blank" rel="noopener noreferrer">Calendario completo</a></div></section>`;
  const mount=()=>{const root=document.querySelector('.content');if(root&&!root.querySelector('.next-match'))root.insertAdjacentHTML('afterbegin',html);};
  document.addEventListener('DOMContentLoaded',mount); new MutationObserver(mount).observe(document.body,{childList:true,subtree:true});
