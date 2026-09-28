@@ -7,7 +7,7 @@ window.TEAM_FIXTURES = {
   ['Lakota',71893],['Lions Alto Chiampo',1087001],['Ospedaletto Vicenza',1199566],['Pedezzi 1950',1323842],
   ['PGS Concordia',1005793],['Piana 2025',1324896],['Recoaro',1057845],['Rino Toniolo',1098609],
   ['Riviera Berica Sq. B',1199567],['San Bortolo Vicenza',1324897],['San Vitale 1995 Sq. B',1199590],['Valli',65290]
- ].map(([name,id,logo])=>({name,id,logo:logo||`https://b2-content.tuttocampo.it/Teams/40/${id}.png`})),
+ ].map(([name,id,logo])=>({name,id,logo:logo||`https://b2-content.tuttocampo.it/Teams/Original/${id}.png?v=2`})),
  matches:[
   [4,1238518,1199566,'2026-10-04','15:30','Montecchio Maggiore','4.5/montecchio-s-pietro-sq-b-ospedaletto-vicenza'],
   [5,1005793,1238518,'2026-10-11','15:30','Schio','5.3/pgs-concordia-montecchio-s-pietro-sq-b'],

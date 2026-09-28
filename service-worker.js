@@ -1,4 +1,4 @@
-const CACHE_NAME = "multegs-v69-roster-birthdays";
+const CACHE_NAME = "multegs-v70-original-team-crests";
 const APP_SHELL = [
     "./",
     "./index.html",
