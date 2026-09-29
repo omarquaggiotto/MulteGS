@@ -1,4 +1,4 @@
-const CACHE_NAME = "multegs-v88-history-backups";
+const CACHE_NAME = "multegs-v89-fine-recipients";
 const APP_SHELL = [
     "./",
     "./index.html",
