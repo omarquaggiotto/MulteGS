@@ -1,4 +1,4 @@
-const CACHE_NAME = "multegs-v91-fine-checkbox-reset";
+const CACHE_NAME = "multegs-v92-rule-category-choice";
 const APP_SHELL = [
     "./",
     "./index.html",
