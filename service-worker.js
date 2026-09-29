@@ -1,4 +1,4 @@
-const CACHE_NAME = "multegs-v93-fast-team-logos";
+const CACHE_NAME = "multegs-v94-multario-assign";
 const APP_SHELL = [
     "./",
     "./index.html",

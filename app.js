@@ -3912,7 +3912,13 @@ function renderRules() {
                                     .map(
                                         rule => `
 
-                                            <article class="rule-row">
+                                            <article
+                                                class="rule-row"
+                                                data-assign-rule="${rule.id}"
+                                                role="button"
+                                                tabindex="0"
+                                                aria-label="Assegna ${escapeHtml(rule.type)}"
+                                            >
 
                                                 <div class="rule-row-copy">
 
@@ -3940,6 +3946,8 @@ function renderRules() {
                                                         class="icon-mini"
                                                         data-edit-rule="${rule.id}"
                                                         type="button"
+                                                        aria-label="Modifica ${escapeHtml(rule.type)}"
+                                                        title="Modifica regola"
                                                     >
                                                         ✏️
                                                     </button>
@@ -3949,6 +3957,8 @@ function renderRules() {
                                                         class="icon-mini"
                                                         data-delete-rule="${rule.id}"
                                                         type="button"
+                                                        aria-label="Elimina ${escapeHtml(rule.type)}"
+                                                        title="Elimina regola"
                                                     >
                                                         🗑️
                                                     </button>
@@ -4244,7 +4254,7 @@ function closeModal() {
    MODALE MULTA
    ========================================================= */
 
-function openFineModal(id = null) {
+function openFineModal(id = null, presetRuleId = null) {
 
     if (!requireOnlineAdmin()) return;
 
@@ -4280,7 +4290,9 @@ function openFineModal(id = null) {
             rule =>
                 rule.id === fine.ruleId
         )
-        : state.rules[0];
+        : state.rules.find(rule => String(rule.id) === String(presetRuleId)) || state.rules[0];
+
+    const initialRuleId = fine?.ruleId ?? initialRule?.id ?? null;
 
 
     const initialCategory =
@@ -4318,8 +4330,8 @@ function openFineModal(id = null) {
                         <div class="field">
                             <label>DESTINATARI</label>
                             <select id="fineRecipients">
-                                <option value="single">Un giocatore</option>
-                                <option value="multiple">Più giocatori</option>
+                                <option value="single" ${presetRuleId ? "" : "selected"}>Un giocatore</option>
+                                <option value="multiple" ${presetRuleId ? "selected" : ""}>Più giocatori</option>
                                 <option value="team">Tutta la squadra</option>
                             </select>
                         </div>
@@ -4437,8 +4449,8 @@ function openFineModal(id = null) {
                                     <option
                                         value="${rule.id}"
                                         ${
-                                            fine?.ruleId ===
-                                            rule.id
+                                            String(initialRuleId) ===
+                                            String(rule.id)
                                                 ? "selected"
                                                 : ""
                                         }
@@ -4553,7 +4565,7 @@ function openFineModal(id = null) {
 
             <!-- IMPORTO -->
 
-            <div class="field">
+            <div class="field" id="fineAmountField">
 
                 <label>
                     IMPORTO (€)
@@ -4627,6 +4639,8 @@ function openFineModal(id = null) {
         document.getElementById(
             "fineAmount"
         );
+
+    const amountField = document.getElementById("fineAmountField");
 
     const quantityField =
         document.getElementById(
@@ -4714,6 +4728,7 @@ function openFineModal(id = null) {
 
     let refreshRuleMenu = () => {};
     const customFineMenus = [];
+    const personalizedRecipientValues = new Map();
 
     function setupFineMenu(select, trigger, menu) {
         function render() {
@@ -4773,6 +4788,43 @@ function openFineModal(id = null) {
     );
     refreshRuleMenu = ruleMenu.render;
 
+    function updatePersonalizedRecipientValues() {
+        const container = document.getElementById("recipientVariableValues");
+        if (!container) return;
+        const rule = state.rules.find(item => String(item.id) === String(ruleSelect.value));
+        const calculation = getRuleCalculation(rule);
+        if (!rule || !["per_minute", "per_piece", "custom_min"].includes(calculation)) {
+            container.innerHTML = "";
+            container.hidden = true;
+            return;
+        }
+        const players = Array.from(document.querySelectorAll("[data-fine-recipient]:checked")).map(input => input.value);
+        if (!players.length) {
+            container.innerHTML = "";
+            container.hidden = true;
+            return;
+        }
+        const settings = calculation === "per_minute"
+            ? { label: "Minuti", min: 0, value: 0 }
+            : calculation === "per_piece"
+                ? { label: "Pezzi", min: 1, value: 1 }
+                : { label: "Importo €", min: Number(rule.minAmount) || 0, value: Number(rule.minAmount) || 0 };
+        container.hidden = false;
+        container.innerHTML = `<strong>VALORI PER GIOCATORE</strong>${players.map(player => {
+            const key = `${rule.id}|${player}`;
+            const value = personalizedRecipientValues.has(key) ? personalizedRecipientValues.get(key) : settings.value;
+            const total = calculation === "custom_min" ? Number(value) : calculateRuleAmount(rule, Number(value));
+            return `<label class="recipient-value-row"><span>${escapeHtml(player)}</span><small>${settings.label}</small><input type="number" min="${settings.min}" step="${calculation === "custom_min" ? "0.01" : "1"}" value="${value}" data-recipient-value="${escapeHtml(player)}" data-recipient-value-key="${escapeHtml(key)}"><output>${money(total)}</output></label>`;
+        }).join("")}`;
+        container.querySelectorAll("[data-recipient-value]").forEach(input => {
+            input.addEventListener("input", () => {
+                personalizedRecipientValues.set(input.dataset.recipientValueKey, input.value);
+                const value = Number(input.value);
+                input.nextElementSibling.textContent = money(calculation === "custom_min" ? value : calculateRuleAmount(rule, value));
+            });
+        });
+    }
+
     [categorySelect, ruleSelect, document.getElementById("finePlayer")]
         .filter(Boolean)
         .forEach(select => {
@@ -4790,6 +4842,9 @@ function openFineModal(id = null) {
 
     function updateFineInterface() {
 
+        queueMicrotask(updatePersonalizedRecipientValues);
+        amountField.style.display = "";
+
         const selectedValue =
             ruleSelect.value;
        const selectedRule =
@@ -4806,6 +4861,7 @@ function openFineModal(id = null) {
         const recipientMode = isEdit
             ? "single"
             : recipientsSelect?.value || "single";
+        const personalizedMode = recipientMode === "multiple";
 
         const rememberedPlayer =
             document.getElementById("finePlayer")?.value ||
@@ -4859,8 +4915,13 @@ function openFineModal(id = null) {
                         </label>
                     `).join("")}
                 </div>
+                <div class="recipient-variable-values" id="recipientVariableValues" hidden></div>
                 <small class="muted">Seleziona i giocatori a cui applicare la multa.</small>
             `;
+
+            finePlayerContainer.querySelectorAll("[data-fine-recipient]").forEach(input => {
+                input.addEventListener("change", updatePersonalizedRecipientValues);
+            });
 
             finePlayerContainer
                 .querySelector("[data-select-all-recipients]")
@@ -4868,6 +4929,7 @@ function openFineModal(id = null) {
                     finePlayerContainer
                         .querySelectorAll("[data-fine-recipient]")
                         .forEach(input => { input.checked = true; });
+                    updatePersonalizedRecipientValues();
                 });
 
             finePlayerContainer
@@ -4876,6 +4938,7 @@ function openFineModal(id = null) {
                     finePlayerContainer
                         .querySelectorAll("[data-fine-recipient]")
                         .forEach(input => { input.checked = false; });
+                    updatePersonalizedRecipientValues();
                 });
         } else if (!document.getElementById("finePlayer")) {
             finePlayerContainer.innerHTML = `
@@ -4963,8 +5026,8 @@ function openFineModal(id = null) {
             "per_minute"
         ) {
 
-            quantityField.style.display =
-                "block";
+            quantityField.style.display = personalizedMode ? "none" : "block";
+            if (personalizedMode) amountField.style.display = "none";
 
             quantityLabel.textContent =
                 "MINUTI DI RITARDO";
@@ -5002,8 +5065,8 @@ function openFineModal(id = null) {
             "per_piece"
         ) {
 
-            quantityField.style.display =
-                "block";
+            quantityField.style.display = personalizedMode ? "none" : "block";
+            if (personalizedMode) amountField.style.display = "none";
 
             quantityLabel.textContent =
                 "NUMERO DI PEZZI";
@@ -5043,6 +5106,7 @@ function openFineModal(id = null) {
 
             quantityField.style.display =
                 "none";
+            if (personalizedMode) amountField.style.display = "none";
 
             amountInput.disabled =
                 false;
@@ -5396,6 +5460,24 @@ document
                 amountInput.value
             );
 
+        const personalizedValues = new Map(
+            Array.from(document.querySelectorAll("[data-recipient-value]"))
+                .map(input => [input.dataset.recipientValue, Number(input.value)])
+        );
+        const usesPersonalizedValues = !isEdit && recipientMode === "multiple" &&
+            ["per_minute", "per_piece", "custom_min"].includes(getRuleCalculation(rule));
+
+        if (usesPersonalizedValues && selectedPlayers.some(playerName => {
+            const value = personalizedValues.get(playerName);
+            if (!Number.isFinite(value)) return true;
+            if (getRuleCalculation(rule) === "per_piece") return value < 1;
+            if (getRuleCalculation(rule) === "custom_min") return value < (Number(rule.minAmount) || 0);
+            return value < 0;
+        })) {
+            showToast("Controlla i valori inseriti per ogni giocatore.");
+            return;
+        }
+
         let quantity =
             null;
 
@@ -5529,6 +5611,15 @@ document
         else {
 
             selectedPlayers.forEach(playerName => {
+                const personalValue = personalizedValues.get(playerName);
+                const personalQuantity = usesPersonalizedValues && ["per_minute", "per_piece"].includes(getRuleCalculation(rule))
+                    ? personalValue
+                    : quantity;
+                const personalAmount = usesPersonalizedValues
+                    ? getRuleCalculation(rule) === "custom_min"
+                        ? personalValue
+                        : calculateRuleAmount(rule, personalValue)
+                    : amount;
                 state.fines.push({
                     id: generateId(),
                     date,
@@ -5536,11 +5627,11 @@ document
                     category: rule.category,
                     type: rule.type,
                     ruleId,
-                    quantity,
+                    quantity: personalQuantity,
                     custom: false,
                     team: recipientMode === "team",
                     createdAt: new Date().toISOString(),
-                    amount
+                    amount: personalAmount
                 });
             });
 
@@ -6298,6 +6389,24 @@ document
             () =>
                 openRuleModal()
         );
+
+
+    /* =========================
+       ASSEGNA DAL MULTARIO
+       ========================= */
+
+    document
+        .querySelectorAll("[data-assign-rule]")
+        .forEach(row => {
+            const assign = event => {
+                if (event.target.closest("[data-edit-rule], [data-delete-rule]")) return;
+                if (event.type === "keydown" && !["Enter", " "].includes(event.key)) return;
+                event.preventDefault();
+                openFineModal(null, row.dataset.assignRule);
+            };
+            row.addEventListener("click", assign);
+            row.addEventListener("keydown", assign);
+        });
 
 
     /* =========================
