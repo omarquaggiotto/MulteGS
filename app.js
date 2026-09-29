@@ -4560,6 +4560,11 @@ function openFineModal(id = null, presetRuleId = null) {
 
                 </div>
 
+                <div class="fine-date-shortcuts" aria-label="Scelte rapide data">
+                    <button type="button" data-fine-date-offset="-1">Ieri</button>
+                    <button type="button" data-fine-date-offset="0">Oggi</button>
+                </div>
+
             </div>
 
 
@@ -4673,8 +4678,9 @@ function openFineModal(id = null, presetRuleId = null) {
     const recipientsSelect = document.getElementById("fineRecipients");
 
 
-    /* Nuova multa: nessun valore precompilato. */
-    if (!isEdit) {
+    /* Nuova multa generica: nessun valore precompilato.
+       Dal Multario, invece, conserva categoria e regola scelte. */
+    if (!isEdit && !presetRuleId) {
         const initialPlayerSelect = document.getElementById("finePlayer");
 
         initialPlayerSelect.insertAdjacentHTML(
@@ -4723,6 +4729,18 @@ function openFineModal(id = null, presetRuleId = null) {
 
     fineDateInput.addEventListener("input", updateFineDateValue);
     fineDateInput.addEventListener("change", updateFineDateValue);
+    document.querySelectorAll("[data-fine-date-offset]").forEach(button => {
+        button.addEventListener("click", () => {
+            const date = new Date();
+            date.setDate(date.getDate() + Number(button.dataset.fineDateOffset || 0));
+            fineDateInput.value = [
+                date.getFullYear(),
+                String(date.getMonth() + 1).padStart(2, "0"),
+                String(date.getDate()).padStart(2, "0")
+            ].join("-");
+            updateFineDateValue();
+        });
+    });
     updateFineDateValue();
 
 
