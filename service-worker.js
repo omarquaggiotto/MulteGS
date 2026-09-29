@@ -1,4 +1,4 @@
-const CACHE_NAME = "multegs-v85-shared-player-photos";
+const CACHE_NAME = "multegs-v86-match-results";
 const APP_SHELL = [
     "./",
     "./index.html",
@@ -82,6 +82,8 @@ self.addEventListener("fetch", event => {
             .then(cached => cached || fetch(request))
     );
 });
+
+
 
 
 
