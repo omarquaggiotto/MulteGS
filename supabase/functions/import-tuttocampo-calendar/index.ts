@@ -125,6 +125,51 @@ async function fetchText(url: string) {
   return text;
 }
 
+const monthNumbers: Record<string, string> = { gennaio:"01",febbraio:"02",marzo:"03",aprile:"04",maggio:"05",giugno:"06",luglio:"07",agosto:"08",settembre:"09",ottobre:"10",novembre:"11",dicembre:"12" };
+
+function parseResultRound(html: string, type: string) {
+  const year = html.match(/\b\d{2}\|\d{2}\|(20\d{2})\b/)?.[1] || String(new Date().getUTCFullYear());
+  const teams = new Map<number, Record<string, unknown>>();
+  const matches: Record<string, unknown>[] = [];
+  let date = "";
+  for (const row of html.matchAll(/<tr\b[^>]*class=["']([^"']*)["'][^>]*(?:data-link=["']([^"']*)["'])?[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    if (/\bdate\b/i.test(row[1])) {
+      const found = decode(row[3]).match(/\b(\d{1,2})\s+(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\b/i);
+      if (found) date = `${year}-${monthNumbers[found[2].toLowerCase()]}-${found[1].padStart(2,"0")}`;
+      continue;
+    }
+    if (!/\bmatch\b/i.test(row[1]) || !date) continue;
+    const cells = [...row[3].matchAll(/<td\b[^>]*class=["']([^"']*)["'][^>]*>([\s\S]*?)<\/td>/gi)];
+    const home = teamFromCell(cells.find(cell => /\bhome\b/i.test(cell[1]))?.[2] || "");
+    const away = teamFromCell(cells.find(cell => /\baway\b/i.test(cell[1]))?.[2] || "");
+    if (!home || !away || (home.id !== TEAM_ID && away.id !== TEAM_ID)) continue;
+    const goals = [...row[3].matchAll(/class=["'][^"']*goal[^"']*["'][^>]*title=["'][^"']*terminata[^"']*["'][^>]*>\s*(\d+)/gi)].map(x => x[1]);
+    if (goals.length !== 2) continue;
+    const url = absolute(row[2] || row[3].match(/href=["']([^"']*\/Partita\/[^"']+)["']/i)?.[1] || "");
+    const round = Number(url.match(/\/Partita\/(\d+)\./i)?.[1] || 0);
+    const time = decode(cells.find(cell => /match-time/i.test(cell[1]))?.[2] || "").match(/\b([01]\d|2[0-3]):[0-5]\d\b/)?.[0] || "00:00";
+    teams.set(home.id, home); teams.set(away.id, away);
+    matches.push({ round, homeId:home.id, awayId:away.id, date, time, place:"", result:`${goals[0]}-${goals[1]}`, status:"played", url, key:`${type}|${date}|${home.id}|${away.id}`, competitionType:type });
+  }
+  return { teams:[...teams.values()], matches };
+}
+
+async function fetchResultRound(source: URL, round: number, type: string) {
+  const competition = source.pathname.match(/^(\/[^/]+\/[^/]+\/[^/]+)/)?.[1];
+  if (!competition) throw new Error("Competizione non riconosciuta");
+  const pageUrl = new URL(`${competition}/Giornata${round}`, source.origin).href;
+  const pageResponse = await fetch(pageUrl, { headers:{ "user-agent":"Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1", "accept-language":"it-IT,it;q=0.9", "referer":"https://www.tuttocampo.it/" } });
+  if (!pageResponse.ok) throw new Error(`Tuttocampo ha risposto ${pageResponse.status}`);
+  const page = await pageResponse.text();
+  const token = page.match(/var tckk='([^']+)'/)?.[1];
+  if (!token) throw new Error("Token risultati non disponibile");
+  const cookie = pageResponse.headers.get("set-cookie")?.split(";")[0] || "";
+  const fragmentUrl = new URL(`/Web/Views/Results/ResultsView.php?tckk=${encodeURIComponent(token)}&v=1`, source.origin);
+  const fragmentResponse = await fetch(fragmentUrl, { headers:{ "user-agent":"Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1", "x-requested-with":"XMLHttpRequest", "referer":pageUrl, ...(cookie ? { cookie } : {}) } });
+  if (!fragmentResponse.ok) throw new Error(`Tuttocampo risultati ${fragmentResponse.status}`);
+  return parseResultRound(await fragmentResponse.text(), type);
+}
+
 function teamCalendarUrl(source: URL) {
   if (/\/Squadra\/MontecchioSPietroSqB\/1238518\/Calendario\/?$/i.test(source.pathname)) return source.href;
   const competitionPath = source.pathname.match(/^(\/[^/]+\/[^/]+\/[^/]+)\/(?:Calendario|Risultati)\/?$/i)?.[1];
@@ -136,19 +181,22 @@ function teamCalendarUrl(source: URL) {
 Deno.serve(async req => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
+    const body = await req.json();
+    const resultsOnly = body.mode === "results";
     const auth = req.headers.get("Authorization");
     if (!auth) return Response.json({ error: "Accesso richiesto" }, { status: 401, headers: corsHeaders });
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const serviceKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-    const adminCheck = await fetch(`${supabaseUrl}/rest/v1/rpc/is_app_admin`, {
-      method: "POST",
-      headers: { authorization: auth, apikey: serviceKey, "content-type": "application/json" },
-      body: "{}",
-    });
-    if (!adminCheck.ok || await adminCheck.json() !== true) {
-      return Response.json({ error: "Permessi amministratore richiesti" }, { status: 403, headers: corsHeaders });
+    if (!resultsOnly) {
+      const adminCheck = await fetch(`${supabaseUrl}/rest/v1/rpc/is_app_admin`, {
+        method: "POST",
+        headers: { authorization: auth, apikey: serviceKey, "content-type": "application/json" },
+        body: "{}",
+      });
+      if (!adminCheck.ok || await adminCheck.json() !== true) {
+        return Response.json({ error: "Permessi amministratore richiesti" }, { status: 403, headers: corsHeaders });
+      }
     }
-    const body = await req.json();
     const type = body.type === "cup" ? "cup" : "league";
     const teamId = Number(body.teamId);
     const rawUrl = String(body.url || "").trim();
@@ -156,6 +204,16 @@ Deno.serve(async req => {
     if (url.hostname === "tuttocampo.it") url.hostname = ALLOWED_HOST;
     if (teamId !== TEAM_ID || url.protocol !== "https:" || url.hostname !== ALLOWED_HOST || !/\/(Calendario|Risultati)\/?$/i.test(url.pathname)) {
       return Response.json({ error: "Link Tuttocampo non valido" }, { status: 400, headers: corsHeaders });
+    }
+    if (resultsOnly) {
+      const rounds = [...new Set((Array.isArray(body.rounds) ? body.rounds : []).map(Number).filter(value => Number.isInteger(value) && value > 0 && value < 100))].slice(0,10);
+      if (!rounds.length) throw new Error("Nessuna giornata da controllare");
+      const teams = new Map<number, Record<string, unknown>>(); const matches: Record<string, unknown>[] = [];
+      for (const round of rounds) {
+        const parsed = await fetchResultRound(url, round, type);
+        parsed.teams.forEach((team:any) => teams.set(Number(team.id),team)); matches.push(...parsed.matches);
+      }
+      return Response.json({ calendar:{ type, competition:"Risultati Tuttocampo", season:"", source:url.href, importedAt:new Date().toISOString(), teams:[...teams.values()], matches, venues:{} } }, { headers:{...corsHeaders,"content-type":"application/json"} });
     }
     // The competition-wide Cup page does not expose its fixtures until a team is
     // selected. Resolve it to Montecchio S. Pietro's calendar so both links accepted by the
