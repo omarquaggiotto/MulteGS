@@ -1,4 +1,4 @@
-const CACHE_NAME = "multegs-v82-calendar-mobile";
+const CACHE_NAME = "multegs-v83-calendar-crests";
 const APP_SHELL = [
     "./",
     "./index.html",
@@ -82,6 +82,7 @@ self.addEventListener("fetch", event => {
             .then(cached => cached || fetch(request))
     );
 });
+
 
 
 
