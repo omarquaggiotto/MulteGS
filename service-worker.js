@@ -1,4 +1,4 @@
-const CACHE_NAME = "multegs-v90-fine-recipients-readable";
+const CACHE_NAME = "multegs-v91-fine-checkbox-reset";
 const APP_SHELL = [
     "./",
     "./index.html",
