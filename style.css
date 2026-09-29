@@ -3590,6 +3590,61 @@ body.modal-open::after { visibility: hidden; }
  .season-report-page footer { left:11mm; right:11mm; bottom:6mm; }
 }
 
+/* GS identity safeguards: keep shared feature additions inside the black/green palette. */
+:root {
+ --bg:#f4f7f4;
+ --surface:#fff;
+ --surface-2:#edf3ee;
+ --text:#07120b;
+ --muted:#526158;
+ --border:#dce6de;
+ --primary:#159447;
+ --primary-dark:#0b6b31;
+ --green:#16a34a;
+}
+[data-theme="dark"] {
+ --bg:#050906;
+ --surface:#0b130e;
+ --surface-2:#132219;
+ --text:#f9fafb;
+ --muted:#9fb2a5;
+ --border:#23372a;
+ --primary:#31c567;
+ --primary-dark:#1ca851;
+ --green:#4ade80;
+}
+
+.app-update-notice {
+ border-color:#2f8f532e;
+ background:linear-gradient(135deg,#123d24,#07120b);
+ box-shadow:0 18px 50px #06170d52;
+}
+.app-update-notice span { color:#b9d9c2; }
+.app-update-notice button { background:linear-gradient(135deg,#1eb45a,#0b7a37); }
+.is-admin .auth-button {
+ border-color:#159447;
+ background:linear-gradient(135deg,#159447,#0b6b31);
+ box-shadow:0 8px 22px #0b6b3133;
+}
+
+@media(max-width:720px) {
+ .topbar {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:4px 8px;
+ }
+ .topbar>div:first-child { display:contents; }
+ .topbar .eyebrow { grid-column:1/-1; grid-row:1; }
+ .topbar h1 { grid-column:1; grid-row:2; margin:0; }
+ .topbar-actions { grid-column:2; grid-row:2; margin-left:0; gap:5px; }
+ .topbar-actions .auth-button { min-height:36px; padding:7px 10px; }
+ .topbar-actions .team-link,
+ .topbar-actions .icon-button,
+ .topbar-actions .header-settings { width:36px; height:36px; min-height:36px; flex-basis:36px; border-radius:12px; }
+ .topbar-actions .team-link img { width:29px; height:29px; }
+}
+
 
 /* Export actions stay reachable before the image, including on narrow iPhones. */
 .export-preview .modal-actions { display: flex; flex-wrap: wrap; margin-top: 0; gap: 8px; }

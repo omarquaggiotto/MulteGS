@@ -1,4 +1,4 @@
-const CACHE_NAME = "multegs-v79-season-save-close";
+const CACHE_NAME = "multegs-v80-gs-header-colors";
 const APP_SHELL = [
     "./",
     "./index.html",
