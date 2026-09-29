@@ -1,4 +1,4 @@
-const CACHE_NAME = "multegs-v80-gs-header-colors";
+const CACHE_NAME = "multegs-v82-calendar-mobile";
 const APP_SHELL = [
     "./",
     "./index.html",
@@ -7,6 +7,8 @@ const APP_SHELL = [
     "./birthdays.js",
     "./birthdays.css",
     "./next-match.js",
+    "./customization-lab.js",
+    "./customization-lab.css",
     "./manifest.json",
     "./stemma-gs-montecchio-san-pietro.png",
     "./html2canvas.min.js"
@@ -80,6 +82,7 @@ self.addEventListener("fetch", event => {
             .then(cached => cached || fetch(request))
     );
 });
+
 
 
 
