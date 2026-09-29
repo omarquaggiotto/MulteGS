@@ -1,4 +1,4 @@
-const CACHE_NAME = "multegs-v86-match-results";
+const CACHE_NAME = "multegs-v87-standings";
 const APP_SHELL = [
     "./",
     "./index.html",
@@ -7,6 +7,7 @@ const APP_SHELL = [
     "./birthdays.js",
     "./birthdays.css",
     "./next-match.js",
+    "./standings-data.js",
     "./customization-lab.js",
     "./customization-lab.css",
     "./manifest.json",
