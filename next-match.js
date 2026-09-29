@@ -18,6 +18,7 @@ window.TEAM_FIXTURES = {"updatedAt":"2026-09-28","season":"2026/27","competition
    return data.matches.filter(m=>m.status==='scheduled' && Number.isFinite(kickoff(m)) && now < kickoff(m)).sort((a,b)=>kickoff(a)-kickoff(b))[0] || null;
  }
  function escape(value) { return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+ function fastLogo(value) { return String(value||'').replace('/Teams/Original/','/Teams/80/'); }
  function team(id) {
    const t=data.teams.find(t=>t.id===id);
    const isGs=id===1238518;
@@ -26,7 +27,7 @@ window.TEAM_FIXTURES = {"updatedAt":"2026-09-28","season":"2026/27","competition
    const name=parts?parts[1]:fullName;
    const qualifier=parts?'Sq. B':'';
    const fallback=!isGs&&t.fallbackLogo?` data-fallback="${escape(t.fallbackLogo)}" onerror="this.onerror=null;this.src=this.dataset.fallback"`:'';
-   return `<div class="next-match-team ${isGs?'is-gs-team':'is-opponent-team'}"><span class="next-match-crest"><img src="${escape(t.logo)}"${fallback} alt="Stemma ${escape(t.name)}"></span><strong class="${qualifier?'has-qualifier':'no-qualifier'}"><span class="next-match-name">${escape(name)}</span><span class="next-match-qualifier"${qualifier?'':' aria-hidden="true"'}>${qualifier||'&nbsp;'}</span></strong></div>`;
+   return `<div class="next-match-team ${isGs?'is-gs-team':'is-opponent-team'}"><span class="next-match-crest"><img src="${escape(fastLogo(t.logo))}"${fallback} alt="Stemma ${escape(t.name)}"></span><strong class="${qualifier?'has-qualifier':'no-qualifier'}"><span class="next-match-name">${escape(name)}</span><span class="next-match-qualifier"${qualifier?'':' aria-hidden="true"'}>${qualifier||'&nbsp;'}</span></strong></div>`;
  }
  function directions(m) {
    if(m.awayId!==1238518) return '';
