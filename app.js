@@ -9,10 +9,10 @@ const THEME_STORAGE_KEY = "multegs_theme_v1";
 const AUTO_BACKUP_STORAGE_KEY = "multegs_auto_backup_v1";
 const CLOUD_STATE_ID = "gs-montecchio-san-pietro";
 const ADMIN_USERNAME = "admin";
-const ADMIN_EMAIL = "admin@multegs.local";
+const ADMIN_EMAIL = "admin@multefc.local";
 
-const SUPABASE_URL = "https://oqbbqzhfqoofppkjpqgx.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_xMhzghNjBCh6l1GrMZ-eZw_HI9yZgdm";
+const SUPABASE_URL = "https://gzeyptkjdvrwzsjeijss.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_juzsgyE5TPcFwNxXZV0t8A_w3TOKMfj";
 const supabaseClient = !LOCAL_CUSTOMIZATION_PREVIEW && window.supabase?.createClient
     ? window.supabase.createClient(
         SUPABASE_URL,
@@ -589,7 +589,7 @@ async function importCalendarFromLink(type, url) {
         payload = await window.__MULTE_GS_CALENDAR_IMPORT_MOCK__({ type, url, teamId: 1238518 });
     } else {
         if (!supabaseClient) throw new Error("Servizio di importazione non disponibile.");
-        const { data, error } = await supabaseClient.functions.invoke("import-tuttocampo-calendar", {
+        const { data, error } = await supabaseClient.functions.invoke("import-tuttocampo-calendar-gs", {
             body: { type, url, teamId: 1238518 }
         });
         if (error) {
@@ -652,7 +652,7 @@ async function refreshMatchResults({ force = false } = {}) {
             if (typeof window.__MULTE_GS_RESULTS_IMPORT_MOCK__ === "function") {
                 payload = await window.__MULTE_GS_RESULTS_IMPORT_MOCK__({ type: source.type, url: source.url, teamId: 1238518, mode: "results", rounds });
             } else {
-                const response = await supabaseClient.functions.invoke("import-tuttocampo-calendar", {
+                const response = await supabaseClient.functions.invoke("import-tuttocampo-calendar-gs", {
                     body: { type: source.type, url: source.url, teamId: 1238518, mode: "results", rounds }
                 });
                 if (response.error) continue;
@@ -664,7 +664,7 @@ async function refreshMatchResults({ force = false } = {}) {
                 const kickoff = calendarKickoff(match);
                 return kickoff && kickoff.getTime() + 3 * 60 * 60 * 1000 <= Date.now() && /^\d{1,2}-\d{1,2}$/.test(String(match.result || ""));
             });
-            const { data, error } = await supabaseClient.rpc("merge_calendar_results", { p_source_type: source.type, p_matches: completed });
+            const { data, error } = await supabaseClient.rpc("merge_calendar_results_gs", { p_source_type: source.type, p_matches: completed });
             if (!error && data) {
                 state = normalizeIncomingState(data);
                 saveLocalState();

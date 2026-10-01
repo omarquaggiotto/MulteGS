@@ -155,7 +155,7 @@ async function saveSharedPlayerPhoto(player,photo){
   state.playerPhotos={...(state.playerPhotos||{}),[player]:photo};saveLocalState();return;
  }
  if(!supabaseClient||!cloudReady)throw new Error('Archivio online momentaneamente non disponibile.');
- const {data,error}=await supabaseClient.rpc('update_player_photo',{p_player_name:player,p_photo_data:photo});
+ const {data,error}=await supabaseClient.rpc('update_player_photo_gs',{p_player_name:player,p_photo_data:photo});
  if(error)throw new Error(error.message?.includes('rate limit')?'La foto è stata cambiata da poco. Attendi qualche secondo e riprova.':'Salvataggio della foto non riuscito.');
  if(data&&typeof data==='object'){state=normalizeIncomingState(data);saveLocalState();}else{await loadCloudState();}
 }
@@ -163,7 +163,7 @@ async function saveSharedPlayerPhoto(player,photo){
 async function restoreSharedPlayerPhoto(player){
  if(!isAdmin)throw new Error('Ripristino disponibile solo per l’Admin.');
  if(LOCAL_CUSTOMIZATION_PREVIEW){const backup=state.playerPhotoBackups?.[player];if(!backup)throw new Error('Nessuna foto precedente disponibile.');const current=getPlayerPhoto(player);state.playerPhotos={...(state.playerPhotos||{}),[player]:backup};state.playerPhotoBackups={...(state.playerPhotoBackups||{}),[player]:current};saveLocalState();return;}
- const {data,error}=await supabaseClient.rpc('restore_player_photo',{p_player_name:player});if(error)throw new Error('Ripristino della foto non riuscito.');
+ const {data,error}=await supabaseClient.rpc('restore_player_photo_gs',{p_player_name:player});if(error)throw new Error('Ripristino della foto non riuscito.');
  if(data&&typeof data==='object'){state=normalizeIncomingState(data);saveLocalState();}else await loadCloudState();
 }
 
