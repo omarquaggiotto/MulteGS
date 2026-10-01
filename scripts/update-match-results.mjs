@@ -1,6 +1,6 @@
 const CONFIG = {
-  projectUrl: "https://oqbbqzhfqoofppkjpqgx.supabase.co",
-  apiKey: "sb_publishable_xMhzghNjBCh6l1GrMZ-eZw_HI9yZgdm",
+  projectUrl: "https://gzeyptkjdvrwzsjeijss.supabase.co",
+  apiKey: "sb_publishable_juzsgyE5TPcFwNxXZV0t8A_w3TOKMfj",
   stateId: "gs-montecchio-san-pietro",
   teamId: 1238518,
 };
@@ -94,7 +94,7 @@ for (const source of sources.filter(item => item.enabled !== false && item.url))
   const matches = [];
   for (const round of rounds) matches.push(...await roundResults(source.url, round, source.type || "league"));
   if (!matches.length) continue;
-  const saved = await fetch(`${CONFIG.projectUrl}/rest/v1/rpc/merge_calendar_results`, { method:"POST", headers:{...auth,"content-type":"application/json"}, body:JSON.stringify({p_source_type:source.type || "league",p_matches:matches}) });
+  const saved = await fetch(`${CONFIG.projectUrl}/rest/v1/rpc/merge_calendar_results_gs`, { method:"POST", headers:{...auth,"content-type":"application/json"}, body:JSON.stringify({p_source_type:source.type || "league",p_matches:matches}) });
   if (!saved.ok) throw new Error(`Salvataggio risultati fallito: ${saved.status} ${await saved.text()}`);
   console.log(`${source.name || source.type}: ${matches.length} risultati verificati`);
 }
@@ -103,5 +103,5 @@ const leagueSource=sources.find(item=>item.enabled!==false&&item.type==="league"
 if(leagueSource){
   const previous=Date.parse(leagueSource.snapshot?.standings?.updatedAt||0)||0; const localHour=Number(new Intl.DateTimeFormat("it-IT",{timeZone:"Europe/Rome",hour:"2-digit",hour12:false}).format(new Date())); const day=Number(new Intl.DateTimeFormat("en-US",{timeZone:"Europe/Rome",weekday:"short"}).format(new Date())==="Sat"?6:new Intl.DateTimeFormat("en-US",{timeZone:"Europe/Rome",weekday:"short"}).format(new Date())==="Sun"?0:-1);
   const weekendAfterMatches=(day===0||day===6)&&localHour>=18; const due=Date.now()-previous>20*3600000||(weekendAfterMatches&&Date.now()-previous>2*3600000);
-  if(due){const standings=await fetchStandings(leagueSource.url);if(standings?.rows.length){const saved=await fetch(`${CONFIG.projectUrl}/rest/v1/rpc/merge_calendar_standings`,{method:"POST",headers:{...auth,"content-type":"application/json"},body:JSON.stringify({p_rows:standings.rows,p_competition:standings.competition,p_updated_at:new Date().toISOString()})});if(!saved.ok)throw new Error(`Salvataggio classifica fallito: ${saved.status} ${await saved.text()}`);console.log(`Classifica: ${standings.rows.length} squadre`);}}
+  if(due){const standings=await fetchStandings(leagueSource.url);if(standings?.rows.length){const saved=await fetch(`${CONFIG.projectUrl}/rest/v1/rpc/merge_calendar_standings_gs`,{method:"POST",headers:{...auth,"content-type":"application/json"},body:JSON.stringify({p_rows:standings.rows,p_competition:standings.competition,p_updated_at:new Date().toISOString()})});if(!saved.ok)throw new Error(`Salvataggio classifica fallito: ${saved.status} ${await saved.text()}`);console.log(`Classifica: ${standings.rows.length} squadre`);}}
 }
