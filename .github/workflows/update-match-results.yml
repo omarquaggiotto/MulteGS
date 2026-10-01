@@ -16,3 +16,6 @@ jobs:
         with:
           node-version: 20
       - run: node scripts/update-match-results.mjs
+        env:
+          TUTTOCAMPO_USERNAME: ${{ secrets.TUTTOCAMPO_USERNAME }}
+          TUTTOCAMPO_PASSWORD: ${{ secrets.TUTTOCAMPO_PASSWORD }}
