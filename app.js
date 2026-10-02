@@ -9,7 +9,7 @@ const THEME_STORAGE_KEY = "multegs_theme_v1";
 const AUTO_BACKUP_STORAGE_KEY = "multegs_auto_backup_v1";
 const CLOUD_STATE_ID = "gs-montecchio-san-pietro";
 const ADMIN_USERNAME = "admin";
-const ADMIN_EMAIL = "admin@multefc.local";
+const ADMIN_EMAIL = "admin@multegs.local";
 
 const SUPABASE_URL = "https://gzeyptkjdvrwzsjeijss.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_juzsgyE5TPcFwNxXZV0t8A_w3TOKMfj";
