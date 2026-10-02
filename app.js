@@ -115,6 +115,8 @@ const defaultState = {
 
     playerStartMonths: {},
 
+    playerEntryFees: {},
+
     fines: [],
 
 payments: {},
@@ -436,6 +438,12 @@ function loadState() {
                         : legacyStartMonth
                 ])
             );
+            const savedEntryFees = loaded.playerEntryFees && typeof loaded.playerEntryFees === "object" && !Array.isArray(loaded.playerEntryFees)
+                ? loaded.playerEntryFees
+                : {};
+            loaded.playerEntryFees = Object.fromEntries(Object.entries(savedEntryFees)
+                .filter(([player, amount]) => typeof player === "string" && player.trim() && Number.isFinite(Number(amount)) && Number(amount) >= 0)
+                .map(([player, amount]) => [player, Number(amount)]));
 
             loaded.rules =
                 Array.isArray(loaded.rules) &&
@@ -534,6 +542,10 @@ function normalizeIncomingState(raw) {
     const year = Number(loaded.season.slice(0, 4)) || 2026;
     const starts = loaded.playerStartMonths && typeof loaded.playerStartMonths === "object" ? loaded.playerStartMonths : {};
     loaded.playerStartMonths = Object.fromEntries(loaded.players.map(player => [player, typeof starts[player] === "string" && /^\d{4}-\d{2}$/.test(starts[player]) ? starts[player] : `${year}-08`]));
+    const entryFees = loaded.playerEntryFees && typeof loaded.playerEntryFees === "object" && !Array.isArray(loaded.playerEntryFees) ? loaded.playerEntryFees : {};
+    loaded.playerEntryFees = Object.fromEntries(Object.entries(entryFees)
+        .filter(([player, amount]) => typeof player === "string" && player.trim() && Number.isFinite(Number(amount)) && Number(amount) >= 0)
+        .map(([player, amount]) => [player, Number(amount)]));
     return loaded;
 }
 
@@ -579,6 +591,12 @@ function validateImportedCalendar(calendar, expectedType) {
         throw new Error("Il link non contiene partite del Montecchio S. Pietro Sq. B.");
     }
     return structuredClone(calendar);
+}
+
+async function readConfiguredSportsWidget(type, url) {
+    const { importSportsWidget } = await import("./sports-widgets.mjs");
+    const previous = (state.seasonConfig?.calendarSources || []).find(source => source.type === type && source.url === url)?.snapshot;
+    return importSportsWidget({ type, url, teamId: 1238518, season: state.season, previous });
 }
 
 async function importCalendarFromLink(type, url) {
@@ -703,14 +721,16 @@ function applyImportedCalendar() {
     if (calendar) {
         const ownTeam = calendar.teams.find(team => Number(team.id) === 1238518);
         if (ownTeam) ownTeam.logo = getTeamLogo();
-        window.MatchCalendar?.setData(calendar);
+        const ownMatches = calendar.matches.filter(match => Number(match.homeId) === 1238518 || Number(match.awayId) === 1238518);
+        const ownTeamIds = new Set(ownMatches.flatMap(match => [Number(match.homeId), Number(match.awayId)]));
+        window.MatchCalendar?.setData({ ...calendar, teams: calendar.teams.filter(team => ownTeamIds.has(Number(team.id))), matches: ownMatches });
     } else {
         window.MatchCalendar?.setTeamLogo?.(getTeamLogo());
     }
 }
 
 function getRuntimeCalendarSnapshot(type) {
-    const calendar = window.MatchCalendar?.getData?.();
+    const calendar = getCombinedImportedCalendar() || window.MatchCalendar?.getData?.();
     if (!calendar || !Array.isArray(calendar.matches) || !Array.isArray(calendar.teams)) return null;
     const matches = calendar.matches.filter(match => type === "cup"
         ? match.competitionType === "cup"
@@ -1551,9 +1571,18 @@ function getPlayerStartMonth(player) {
 }
 
 function getPlayerMonthBase(player, monthId) {
-    return monthId < getPlayerStartMonth(player)
-        ? 0
-        : getMonthlyBase(monthId);
+    const startMonth = getPlayerStartMonth(player);
+    if (monthId < startMonth) return 0;
+    if (monthId === startMonth && Object.hasOwn(state.playerEntryFees || {}, player)) {
+        return Math.max(0, Number(state.playerEntryFees[player]) || 0);
+    }
+    return getMonthlyBase(monthId);
+}
+
+function getPlayerEntryFee(player, startMonth = getPlayerStartMonth(player)) {
+    return Object.hasOwn(state.playerEntryFees || {}, player)
+        ? Math.max(0, Number(state.playerEntryFees[player]) || 0)
+        : getMonthlyBase(startMonth);
 }
 
 
@@ -1955,21 +1984,28 @@ function renderHome() {
                     fine => fine.player === player
                 );
 
-            const amount =
+            const fineAmount =
                 playerFines.reduce(
                     (sum, fine) =>
                         sum + Number(fine.amount),
                     0
                 );
 
+            const baseAmount = dueMonths.reduce(
+                (sum, month) => sum + getPlayerMonthBase(player, month),
+                0
+            );
+
             return {
                 player,
                 fines: playerFines.length,
-                amount
+                amount: fineAmount + baseAmount,
+                baseAmount,
+                fineAmount
             };
 
         })
-        .filter(player => player.fines > 0)
+        .filter(player => player.amount > 0)
         .sort(
             (a, b) =>
                 b.amount - a.amount || compareItalian(a.player, b.player)
@@ -2005,9 +2041,11 @@ function renderHome() {
     const currentMonthPayment = state.players.reduce(
         (totals, player) => {
             const summary = getPlayerMonthSummary(player, currentMonth);
-            totals.due += summary.total;
-            totals.paid += summary.paid;
-            totals.remaining += summary.remaining;
+            const monthDue = summary.base + summary.fines;
+            const monthPaid = Math.min(monthDue, summary.paid);
+            totals.due += monthDue;
+            totals.paid += monthPaid;
+            totals.remaining += Math.max(0, monthDue - monthPaid);
             return totals;
         },
         { due: 0, paid: 0, remaining: 0 }
@@ -2073,12 +2111,7 @@ function renderHome() {
                                         margin-top:4px;
                                     "
                                 >
-                                    ${player.fines}
-                                    ${
-                                        player.fines === 1
-                                            ? "multa"
-                                            : "multe"
-                                    }
+                                    Quota ${money(player.baseAmount)} · ${player.fines} ${player.fines === 1 ? "multa" : "multe"}
                                 </div>
 
                             </div>
@@ -2175,12 +2208,7 @@ function renderHome() {
                                         "
                                     >
 
-                                        ${player.fines}
-                                        ${
-                                            player.fines === 1
-                                                ? "multa"
-                                                : "multe"
-                                        }
+                                        Quota ${money(player.baseAmount)} · ${player.fines} ${player.fines === 1 ? "multa" : "multe"}
 
                                     </div>
 
@@ -3312,17 +3340,18 @@ function openTeamStandings() {
 }
 window.openTeamStandings = openTeamStandings;
 function openTeamCalendar() {
-    const calendar = window.MatchCalendar?.getData?.();
+    const calendar = getCombinedImportedCalendar() || window.MatchCalendar?.getData?.();
     if (!calendar || !Array.isArray(calendar.matches)) {
         showToast("Calendario non disponibile.");
         return;
     }
     const teams = new Map((calendar.teams || []).map(team => [Number(team.id), team]));
-    const matches = calendar.matches
-        .filter(match => (Number(match.homeId) === 1238518 || Number(match.awayId) === 1238518) && /^\d{4}-\d{2}-\d{2}$/.test(String(match.date || "")) && /^\d{2}:\d{2}$/.test(String(match.time || "")))
+    const allMatches = calendar.matches
+        .filter(match => /^\d{4}-\d{2}-\d{2}$/.test(String(match.date || "")) && /^\d{2}:\d{2}$/.test(String(match.time || "")))
         .map(match => ({ ...match, kickoff: window.MatchCalendar.kickoff(match) }))
         .filter(match => Number.isFinite(match.kickoff))
         .sort((left, right) => left.kickoff - right.kickoff);
+    const matches = allMatches.filter(match => Number(match.homeId) === 1238518 || Number(match.awayId) === 1238518);
     const hasLeague = matches.some(match => match.competitionType !== "cup");
     const hasCup = matches.some(match => match.competitionType === "cup");
     const safeExternalUrl = value => {
@@ -3331,10 +3360,9 @@ function openTeamCalendar() {
     openModal("Calendario partite", `
         <div class="team-calendar">
             <div class="team-calendar-toolbar" role="tablist" aria-label="Filtra calendario">
-                <button class="team-calendar-filter active" type="button" data-calendar-filter="upcoming">Prossime</button>
-                <button class="team-calendar-filter" type="button" data-calendar-filter="all">Tutte</button>
-                ${hasLeague ? `<button class="team-calendar-filter" type="button" data-calendar-filter="league">Campionato</button>` : ""}
-                ${hasCup ? `<button class="team-calendar-filter" type="button" data-calendar-filter="cup">Coppa</button>` : ""}
+                <button class="team-calendar-filter active" type="button" data-calendar-filter="team">GS Montecchio</button>
+                ${hasLeague ? `<button class="team-calendar-filter" type="button" data-calendar-filter="league-all">Campionato</button>` : ""}
+                ${hasCup ? `<button class="team-calendar-filter" type="button" data-calendar-filter="cup-all">Coppa</button>` : ""}
             </div>
             <div id="teamCalendarList" aria-live="polite"></div>
         </div>
@@ -3342,11 +3370,41 @@ function openTeamCalendar() {
     document.querySelector("#modalRoot .modal")?.classList.add("team-calendar-modal");
     document.querySelector("#modalRoot .modal-backdrop")?.classList.add("team-calendar-backdrop");
     const list = document.getElementById("teamCalendarList");
+    const fullViewIndex = {};
+    let teamSubView = "upcoming";
     const draw = filter => {
         const now = Date.now();
-        const filtered = matches.filter(match => filter === "all" || (filter === "upcoming" ? match.kickoff >= now && match.status !== "played" : (match.competitionType === "cup") === (filter === "cup")));
+        const sourceMatches = filter.endsWith("-all") ? allMatches : matches;
+        let filtered = sourceMatches.filter(match => {
+            if (filter === "team") {
+                if (teamSubView === "upcoming") return match.kickoff >= now && match.status !== "played";
+                if (teamSubView === "results") return match.status === "played" || Boolean(match.result);
+                return true;
+            }
+            if (filter === "league-all" || filter === "league") return match.competitionType !== "cup";
+            if (filter === "cup-all" || filter === "cup") return match.competitionType === "cup";
+            return match.kickoff >= now && match.status !== "played";
+        });
+        let stepNavigation = filter === "team" ? `<nav class="team-calendar-subnav" aria-label="Filtra partite della squadra"><button type="button" data-team-calendar-view="upcoming" class="${teamSubView === "upcoming" ? "active" : ""}">Prossime</button><button type="button" data-team-calendar-view="all" class="${teamSubView === "all" ? "active" : ""}">Tutte</button><button type="button" data-team-calendar-view="results" class="${teamSubView === "results" ? "active" : ""}">Risultati</button></nav>` : "";
+        if (filter.endsWith("-all") && filtered.length) {
+            const stepsByKey = new Map();
+            filtered.forEach(match => {
+                const key = filter === "league-all" ? String(Number(match.round) || 0) : match.date;
+                if (!stepsByKey.has(key)) stepsByKey.set(key, []);
+                stepsByKey.get(key).push(match);
+            });
+            const steps = [...stepsByKey.entries()].sort((left, right) => filter === "league-all" ? Number(left[0]) - Number(right[0]) : left[0].localeCompare(right[0]));
+            const labels = steps.map(([key]) => filter === "league-all" ? `${Number(key)}ª giornata` : `Turno del ${new Date(`${key}T12:00:00`).toLocaleDateString("it-IT", { day: "numeric", month: "long" })}`);
+            if (!Number.isInteger(fullViewIndex[filter])) {
+                const nextIndex = steps.findIndex(([, games]) => games.some(game => game.kickoff >= now && game.status !== "played"));
+                fullViewIndex[filter] = nextIndex >= 0 ? nextIndex : Math.max(0, steps.length - 1);
+            }
+            fullViewIndex[filter] = Math.max(0, Math.min(fullViewIndex[filter], steps.length - 1));
+            filtered = steps[fullViewIndex[filter]][1];
+            stepNavigation = `<nav class="team-calendar-round-nav" aria-label="Cambia giornata"><button type="button" data-calendar-step="-1" ${fullViewIndex[filter] === 0 ? "disabled" : ""} aria-label="Giornata precedente">‹</button><div><select data-calendar-step-select aria-label="Seleziona giornata">${labels.map((label, index) => `<option value="${index}" ${index === fullViewIndex[filter] ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}</select><span>${fullViewIndex[filter] + 1} di ${steps.length}</span></div><button type="button" data-calendar-step="1" ${fullViewIndex[filter] === steps.length - 1 ? "disabled" : ""} aria-label="Giornata successiva">›</button></nav>`;
+        }
         if (!filtered.length) {
-            list.innerHTML = `<div class="team-calendar-empty"><strong>${filter === "upcoming" ? "Nessuna partita in programma" : "Nessuna partita disponibile"}</strong><p>${filter === "upcoming" ? "Il calendario non prevede altre gare." : "Non risultano gare per questo filtro."}</p></div>`;
+            list.innerHTML = `<div class="team-calendar-empty"><strong>Nessuna partita disponibile</strong><p>Non risultano gare per questa sezione.</p></div>`;
             return;
         }
         const groups = new Map();
@@ -3355,14 +3413,13 @@ function openTeamCalendar() {
             if (!groups.has(key)) groups.set(key, []);
             groups.get(key).push(match);
         });
-        list.innerHTML = [...groups.entries()].map(([month, monthMatches]) => {
+        list.innerHTML = stepNavigation + [...groups.entries()].map(([month, monthMatches]) => {
             const monthLabel = new Date(`${month}-01T12:00:00`).toLocaleDateString("it-IT", { month: "long", year: "numeric" });
             return `<section class="team-calendar-month"><h3>${escapeHtml(monthLabel)}</h3>${monthMatches.map(match => {
                 const homeTeam = teams.get(Number(match.homeId)) || {};
                 const awayTeam = teams.get(Number(match.awayId)) || {};
                 const home = homeTeam.name || "Squadra casa";
                 const away = awayTeam.name || "Squadra ospite";
-                const opponent = Number(match.homeId) === 1238518 ? away : home;
                 const awayMatch = Number(match.awayId) === 1238518;
                 const date = new Date(`${match.date}T12:00:00`);
                 const venue = match.venue || calendar.venues?.[match.homeId];
@@ -3374,20 +3431,38 @@ function openTeamCalendar() {
                     const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]).join("").toUpperCase();
                     return `<span class="team-calendar-crest">${logo ? `<img src="${escapeHtml(logo)}" alt="" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><b hidden>${escapeHtml(initials)}</b>` : `<b>${escapeHtml(initials)}</b>`}</span>`;
                 };
+                if (played) return `<article class="team-calendar-match is-played" data-calendar-type="${match.competitionType === "cup" ? "cup" : "league"}">
+                    <div class="team-calendar-date"><span>${date.toLocaleDateString("it-IT", { weekday: "short" }).replace(".", "")}</span><strong>${date.getDate()}</strong><small>${date.toLocaleDateString("it-IT", { month: "short" }).replace(".", "")}</small></div>
+                    <div class="team-calendar-copy"><small>${match.competitionType === "cup" ? "Coppa · Turno" : `Campionato · ${Number(match.round) || "—"}ª giornata`}</small><div class="team-calendar-teams"><div>${teamBadge(homeTeam, home, Number(match.homeId) === 1238518)}<strong>${escapeHtml(home)}</strong></div><em class="is-score">${escapeHtml(match.result || "—")}</em><div>${teamBadge(awayTeam, away, Number(match.awayId) === 1238518)}<strong>${escapeHtml(away)}</strong></div></div><span>${escapeHtml(match.place || venue?.name || "Campo da definire")}</span></div>
+                    <div class="team-calendar-result"><span>FINALE</span></div>
+                    ${(mapsUrl || matchUrl) ? `<div class="team-calendar-actions">${mapsUrl ? `<a href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer">Apri Maps</a>` : ""}${matchUrl ? `<a href="${escapeHtml(matchUrl)}" target="_blank" rel="noopener noreferrer">Tuttocampo ↗</a>` : ""}</div>` : ""}
+                </article>`;
                 return `<article class="team-calendar-match" data-calendar-type="${match.competitionType === "cup" ? "cup" : "league"}">
                     <div class="team-calendar-date"><span>${date.toLocaleDateString("it-IT", { weekday: "short" }).replace(".", "")}</span><strong>${date.getDate()}</strong><small>${date.toLocaleDateString("it-IT", { month: "short" }).replace(".", "")}</small></div>
-                    <div class="team-calendar-copy"><small>${match.competitionType === "cup" ? "Coppa" : "Campionato"} · ${awayMatch ? "Trasferta" : "Casa"}</small><div class="team-calendar-teams"><div>${teamBadge(homeTeam, home, Number(match.homeId) === 1238518)}<strong>${escapeHtml(home)}</strong></div><em>VS</em><div>${teamBadge(awayTeam, away, Number(match.awayId) === 1238518)}<strong>${escapeHtml(away)}</strong></div></div><span>${escapeHtml(match.place || venue?.name || "Campo da definire")}</span></div>
-                    <div class="team-calendar-result"><strong>${played ? escapeHtml(match.result || "—") : escapeHtml(match.time)}</strong><span>${played ? "FINALE" : `${Number(match.round) || "—"}ª G.`}</span></div>
+                    <div class="team-calendar-copy"><small>${match.competitionType === "cup" ? "Coppa · Turno" : `Campionato · ${Number(match.round) || "—"}ª giornata`}</small><div class="team-calendar-teams"><div>${teamBadge(homeTeam, home, Number(match.homeId) === 1238518)}<strong>${escapeHtml(home)}</strong></div><em>VS</em><div>${teamBadge(awayTeam, away, Number(match.awayId) === 1238518)}<strong>${escapeHtml(away)}</strong></div></div><span>${escapeHtml(match.place || venue?.name || "Campo da definire")}</span></div>
+                    <div class="team-calendar-result"><strong>${escapeHtml(match.time)}</strong><span>${Number(match.round) || "—"}ª G.</span></div>
                     ${(mapsUrl || matchUrl) ? `<div class="team-calendar-actions">${mapsUrl ? `<a href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer">Apri Maps</a>` : ""}${matchUrl ? `<a href="${escapeHtml(matchUrl)}" target="_blank" rel="noopener noreferrer">Tuttocampo ↗</a>` : ""}</div>` : ""}
                 </article>`;
             }).join("")}</section>`;
         }).join("");
+        list.querySelectorAll("[data-calendar-step]").forEach(button => button.onclick = () => {
+            fullViewIndex[filter] += Number(button.dataset.calendarStep);
+            draw(filter);
+        });
+        list.querySelector("[data-calendar-step-select]")?.addEventListener("change", event => {
+            fullViewIndex[filter] = Number(event.target.value);
+            draw(filter);
+        });
+        list.querySelectorAll("[data-team-calendar-view]").forEach(button => button.onclick = () => {
+            teamSubView = button.dataset.teamCalendarView;
+            draw("team");
+        });
     };
     document.querySelectorAll("[data-calendar-filter]").forEach(button => button.onclick = () => {
         document.querySelectorAll("[data-calendar-filter]").forEach(item => item.classList.toggle("active", item === button));
         draw(button.dataset.calendarFilter);
     });
-    draw("upcoming");
+    draw("team");
 }
 window.openTeamCalendar = openTeamCalendar;
 
@@ -5823,6 +5898,11 @@ function openPlayerModal() {
                 </select>
                 <span class="small muted">I mesi precedenti non genereranno quote o arretrati.</span>
             </div>
+            <div class="field">
+                <label for="playerEntryFee">QUOTA DEL PRIMO MESE / INGRESSO (€)</label>
+                <input id="playerEntryFee" type="number" min="0" step="0.5" value="${getMonthlyBase(defaultStartMonth)}">
+                <span class="small muted">Sostituisce la quota ordinaria soltanto nel primo mese del giocatore.</span>
+            </div>
             <div class="modal-actions">
 
                 <button
@@ -5908,8 +5988,10 @@ function openPlayerModal() {
             if (photoBusy) return showToast("Attendi la preparazione della foto.");
             const birthDate = document.getElementById("playerBirthDate").value;
             const startMonth = document.getElementById("playerStartMonth").value;
+            const entryFee = Number(document.getElementById("playerEntryFee").value);
             if (birthDate && !validBirthday(birthDate)) return showToast("Inserisci una data di nascita valida.");
             if (!playerStartOptions.includes(startMonth)) return showToast("Seleziona una mensilità valida.");
+            if (!Number.isFinite(entryFee) || entryFee < 0) return showToast("Inserisci una quota d’ingresso valida.");
 
             const name =
                 document
@@ -5956,6 +6038,11 @@ function openPlayerModal() {
             state.playerStartMonths = {
                 ...(state.playerStartMonths || {}),
                 [name]: startMonth
+            };
+
+            state.playerEntryFees = {
+                ...(state.playerEntryFees || {}),
+                [name]: entryFee
             };
 
 
@@ -7085,6 +7172,7 @@ function openSeasonSetupModal(editCurrent = false) {
             closedAt: new Date().toISOString(),
             fines: structuredClone(state.fines),
             payments: structuredClone(state.payments),
+            playerEntryFees: structuredClone(state.playerEntryFees || {}),
             seasonConfig: structuredClone(state.seasonConfig || {})
         };
         const startYear = Number(season.slice(0, 4));
@@ -7107,6 +7195,7 @@ function openSeasonSetupModal(editCurrent = false) {
             },
             seasonArchives: [...(state.seasonArchives || []), archive],
             playerStartMonths: Object.fromEntries(state.players.map(player => [player, `${startYear}-${String(paymentStartMonth).padStart(2, "0")}`])),
+            playerEntryFees: {},
             fines: [],
             payments: {}
         };
