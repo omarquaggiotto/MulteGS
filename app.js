@@ -2953,6 +2953,71 @@ if (fineSearchQuery.trim()) {
     `;
 }
 
+function openTeamPaymentModal() {
+    const month = getDisplayedPaymentMonth();
+    const label = new Date(`${month}-01T12:00:00`).toLocaleDateString("it-IT", { month: "long", year: "numeric" });
+    const monthLabel = label.charAt(0).toUpperCase() + label.slice(1);
+    const candidates = getSortedPlayers()
+        .map(player => ({ player, summary: getPlayerMonthSummary(player, month) }))
+        .filter(entry => entry.summary.remaining > 0);
+    const satispayUrl = String(state.teamCustomization?.satispayUrl || "").trim();
+    const paypalMeUrl = String(state.teamCustomization?.paypalMeUrl || "").trim().replace(/\/$/, "");
+    if (!satispayUrl && !paypalMeUrl) {
+        showToast("Pagamento online non configurato dalla squadra.");
+        return;
+    }
+    if (!candidates.length) {
+        showToast("Per questo mese risulta tutto saldato.");
+        return;
+    }
+    openModal("Paga le multe", `
+        <div class="team-pay-panel">
+            <div class="team-pay-hero"><span class="team-pay-mark">€</span><div><small>PAGAMENTO DI SQUADRA</small><h3>Per chi stai pagando?</h3><p>Puoi selezionare una o più persone.</p></div></div>
+            <div class="team-pay-players">
+                ${candidates.map(({ player, summary }) => `<label class="team-pay-player"><input type="checkbox" data-team-pay-player value="${escapeHtml(player)}"><span class="player-avatar">${playerListPortrait(player)}</span><span><strong>${escapeHtml(player)}</strong><small>${money(summary.remaining)} · ${escapeHtml(monthLabel)}</small></span><b>${money(summary.remaining)}</b></label>`).join("")}
+            </div>
+            <div class="team-pay-total"><span>Totale da versare</span><strong id="teamPayTotal">${money(0)}</strong></div>
+            <label class="team-pay-description"><span>Descrizione pagamento</span><textarea id="teamPayDescription" rows="3" readonly>Seleziona almeno una persona</textarea></label>
+            <p class="team-pay-note" id="teamPayNote">La descrizione verrà copiata automaticamente prima di aprire il pagamento.</p>
+            <div class="team-pay-actions">
+                ${satispayUrl ? `<button class="team-pay-button is-satispay" id="payWithSatispay" type="button" disabled><span class="team-pay-brand"><img src="satispay-icon.ico" alt=""></span><span><strong>Paga con Satispay</strong><small>Apri la colletta</small></span></button>` : ""}
+                ${paypalMeUrl ? `<button class="team-pay-button is-paypal" id="payWithPaypal" type="button" disabled><span class="team-pay-brand">P</span><span><strong>Paga con PayPal</strong><small>Importo già compilato</small></span></button>` : ""}
+            </div>
+        </div>
+    `);
+    document.querySelector("#modalRoot .modal")?.classList.add("team-pay-modal");
+    const selected = () => [...document.querySelectorAll("[data-team-pay-player]:checked")]
+        .map(input => candidates.find(entry => entry.player === input.value))
+        .filter(Boolean);
+    const paymentData = () => {
+        const entries = selected();
+        const total = entries.reduce((sum, entry) => sum + entry.summary.remaining, 0);
+        const details = entries.map(entry => `${entry.player} ${money(entry.summary.remaining)}`).join(", ");
+        const teamName = state.teamCustomization?.shortName || state.team || "Squadra";
+        return { entries, total, description: `${teamName} · ${monthLabel} · ${details} · Totale ${money(total)}` };
+    };
+    const update = () => {
+        const data = paymentData();
+        document.getElementById("teamPayTotal").textContent = money(data.total);
+        document.getElementById("teamPayDescription").value = data.entries.length ? data.description : "Seleziona almeno una persona";
+        document.querySelectorAll(".team-pay-button").forEach(button => { button.disabled = !data.entries.length; });
+    };
+    document.querySelectorAll("[data-team-pay-player]").forEach(input => input.addEventListener("change", update));
+    const openPayment = (provider) => {
+        const data = paymentData();
+        if (!data.entries.length) return;
+        let destination = satispayUrl;
+        if (provider === "paypal") destination = `${paypalMeUrl}/${data.total.toFixed(2)}EUR`;
+        const paymentWindow = window.open(destination, "_blank", "noopener,noreferrer");
+        navigator.clipboard?.writeText(data.description)
+            .then(() => showToast(provider === "paypal" ? "Descrizione copiata. Importo già compilato." : `Descrizione copiata. Inserisci ${money(data.total)} su Satispay.`))
+            .catch(() => showToast(`Inserisci ${money(data.total)} e usa la descrizione mostrata.`));
+        if (!paymentWindow) window.location.href = destination;
+    };
+    document.getElementById("payWithSatispay")?.addEventListener("click", () => openPayment("satispay"));
+    document.getElementById("payWithPaypal")?.addEventListener("click", () => openPayment("paypal"));
+}
+
 function renderPayments() {
     const months =
         getPaymentMonths();
@@ -3169,6 +3234,13 @@ function renderPayments() {
 
         </div>
 
+        ${state.teamCustomization?.satispayUrl || state.teamCustomization?.paypalMeUrl ? `
+            <section class="card team-pay-callout">
+                <div><span>PAGAMENTO RAPIDO</span><h2>Paga per una o più persone</h2><p>L’app calcola il totale e prepara la descrizione completa.</p></div>
+                <button class="btn team-pay-open" id="openTeamPayment" type="button"><span aria-hidden="true">€</span>Paga ora</button>
+            </section>
+        ` : ""}
+
         <section class="card season-report-card">
             <div class="season-report-copy">
                 <span class="season-report-kicker">STAGIONE ${escapeHtml(state.season)}</span>
@@ -3361,23 +3433,19 @@ function openTeamStandings() {
     document.querySelector("#modalRoot .modal-backdrop")?.classList.add("team-calendar-backdrop");
 }
 window.openTeamStandings = openTeamStandings;
-async function openTeamCalendar() {
+function openTeamCalendar() {
     let calendar = getCombinedImportedCalendar() || window.MatchCalendar?.getData?.();
-    if (navigator.onLine) {
-        try { calendar = await loadFullCompetitionCalendar() || calendar; }
-        catch (error) { console.warn("Calendario completo non aggiornato", error); }
-    }
     if (!calendar || !Array.isArray(calendar.matches)) {
         showToast("Calendario non disponibile.");
         return;
     }
-    const teams = new Map((calendar.teams || []).map(team => [Number(team.id), team]));
-    const allMatches = calendar.matches
+    let teams = new Map((calendar.teams || []).map(team => [Number(team.id), team]));
+    let allMatches = calendar.matches
         .filter(match => /^\d{4}-\d{2}-\d{2}$/.test(String(match.date || "")) && /^\d{2}:\d{2}$/.test(String(match.time || "")))
         .map(match => ({ ...match, kickoff: window.MatchCalendar.kickoff(match) }))
         .filter(match => Number.isFinite(match.kickoff))
         .sort((left, right) => left.kickoff - right.kickoff);
-    const matches = allMatches.filter(match => Number(match.homeId) === 1238518 || Number(match.awayId) === 1238518);
+    let matches = allMatches.filter(match => Number(match.homeId) === 1238518 || Number(match.awayId) === 1238518);
     const hasLeague = allMatches.some(match => match.competitionType !== "cup");
     const hasCup = allMatches.some(match => match.competitionType === "cup");
     const safeExternalUrl = value => {
@@ -3489,6 +3557,21 @@ async function openTeamCalendar() {
         draw(button.dataset.calendarFilter);
     });
     draw("team");
+    if (navigator.onLine) {
+        loadFullCompetitionCalendar().then(updatedCalendar => {
+            if (!updatedCalendar?.matches || !document.body.contains(list)) return;
+            calendar = updatedCalendar;
+            teams = new Map((calendar.teams || []).map(team => [Number(team.id), team]));
+            allMatches = calendar.matches
+                .filter(match => /^\d{4}-\d{2}-\d{2}$/.test(String(match.date || "")) && /^\d{2}:\d{2}$/.test(String(match.time || "")))
+                .map(match => ({ ...match, kickoff: window.MatchCalendar.kickoff(match) }))
+                .filter(match => Number.isFinite(match.kickoff))
+                .sort((left, right) => left.kickoff - right.kickoff);
+            matches = allMatches.filter(match => Number(match.homeId) === 1238518 || Number(match.awayId) === 1238518);
+            const activeFilter = document.querySelector("[data-calendar-filter].active")?.dataset.calendarFilter || "team";
+            draw(activeFilter);
+        }).catch(error => console.warn("Calendario completo non aggiornato", error));
+    }
 }
 window.openTeamCalendar = openTeamCalendar;
 
@@ -6534,6 +6617,10 @@ document
         "click",
         () => exportPaymentsImage("due")
     );
+
+   document
+    .getElementById("openTeamPayment")
+    ?.addEventListener("click", openTeamPaymentModal);
 
    document
     .getElementById("exportSeasonImage")
